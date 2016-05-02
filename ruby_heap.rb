@@ -45,8 +45,7 @@ class RHeap
   def deq
     return nil if @heap.empty?
     @size -= 1
-    index = 0
-    value = @heap[index]
+    value = @heap.first
     if @compare_by
       list = @table[value]
       data = list.shift
@@ -56,17 +55,26 @@ class RHeap
       data = value
     end
     value = @heap.pop
+    lastindex = @heap.size-1
     return data if @heap.empty?
+    index = 0
+    heap = @heap
     while true
-      lindex, rindex = 2*index+1, 2*index+2
-      left, right = @heap[lindex], @heap[rindex]
-      break unless left
-      cindex, cvalue = !right || left < right ? [lindex, left] : [rindex, right]
-      break unless value > cvalue
-      @heap[index] = cvalue
-      index = cindex
+      lindex = 2*index+1
+      break if lindex > lastindex
+      lvalue = heap[lindex]
+      if lindex < lastindex
+        rvalue = heap[lindex+1]
+        unless lvalue < rvalue
+          lindex += 1
+          lvalue = rvalue
+        end
+      end
+      break unless value > lvalue
+      heap[index] = lvalue
+      index = lindex
     end
-    @heap[index] = value
+    heap[index] = value
     data
   end
   def to_s;"#<#{self.class.name}:0x#{(object_id*2).to_s(16)}[#{@size}]>";end
