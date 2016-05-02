@@ -26,4 +26,7 @@ ans = arr.take(80).sort.take(50)+(arr.take(80).sort.drop(50)+arr.drop(80)).sort
 require 'pry'
 binding.pry unless rout == ans
 binding.pry unless cout == ans
+r=RHeap.new{|a|a/10}
+100.times.reverse_each{|i|r<<i}
+binding.pry unless  100.times.map{r.deq}.each_slice(10).map(&:reverse).flatten==100.times.to_a
 puts :done
