@@ -7,8 +7,8 @@ require './ruby_heap.bundle'
 require './ruby_heap'
 rh=RHeap.new
 ch=CExtHeap.new
-t=Time.now;1000000.times{rh<<rand};p [:ruby, Time.now-t]
-t=Time.now;1000000.times{ch<<rand};p [:c, Time.now-t]
+t0=Time.now;100000.times{rh<<rand};t1=Time.now;100000.times{rh.deq};t2=Time.now;p [:ruby, t1-t0, t2-t1]
+t0=Time.now;100000.times{ch<<rand};t1=Time.now;100000.times{ch.deq};t2=Time.now;p [:c, t1-t0, t2-t1]
 
 arr=1000.times.map{rand}
 rh=RHeap.new
