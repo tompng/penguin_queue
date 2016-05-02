@@ -12,6 +12,7 @@ class RHeap
     else
       @heap = data.sort
     end
+    @heap.unshift nil
   end
   def enq data
     @size += 1
@@ -27,8 +28,8 @@ class RHeap
       value = data
     end
     index = @heap.size
-    while index > 0
-      pindex = (index-1)/2
+    while index > 1
+      pindex = index/2
       pvalue = @heap[pindex]
       break if pvalue < value
       @heap[index] = pvalue
@@ -43,24 +44,23 @@ class RHeap
     @table[value].first if value
   end
   def deq
-    return nil if @heap.empty?
+    return nil if @heap.size == 1
     @size -= 1
-    value = @heap.first
+    retval = @heap[1]
     if @compare_by
-      list = @table[value]
-      data = list.shift
-      return data unless list.empty?
-      @table.delete value
-    else
-      data = value
+      key = retval
+      list = @table[key]
+      retval = list.shift
+      return retval unless list.empty?
+      @table.delete key
     end
     value = @heap.pop
-    lastindex = @heap.size-1
-    return data if @heap.empty?
-    index = 0
+    return retval if @heap.size == 1
+    lastindex = @heap.size - 1
+    index = 1
     heap = @heap
     while true
-      lindex = 2*index+1
+      lindex = 2*index
       break if lindex > lastindex
       lvalue = heap[lindex]
       if lindex < lastindex
@@ -75,7 +75,7 @@ class RHeap
       index = lindex
     end
     heap[index] = value
-    data
+    retval
   end
   def to_s;"#<#{self.class.name}:0x#{(object_id*2).to_s(16)}[#{@size}]>";end
   def empty?;@heap.empty?;end
