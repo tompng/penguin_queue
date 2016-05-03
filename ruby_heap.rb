@@ -39,7 +39,7 @@ class RHeap
     self
   end
   def first
-    value = @heap.first
+    value = @heap[1]
     return value unless @compare_by
     @table[value].first if value
   end
