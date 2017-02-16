@@ -10,16 +10,25 @@ void node_mark(struct node *ptr){
   rb_gc_mark(ptr->priority);
   rb_gc_mark(ptr->value);
 }
-VALUE node_alloc_internal(VALUE priority, VALUE value){
+VALUE node_alloc_internal(int index, VALUE heap, VALUE priority, VALUE value){
   struct node *ptr = ALLOC(struct node);
+  ptr->index = index;
+  ptr->heap = heap;
   ptr->priority = priority;
   ptr->value = value;
   return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
 }
-
-VALUE node_alloc(VALUE klass){
-  return node_alloc_internal(Qnil, Qfalse);
+long node_idx(VALUE self){
+  struct node *ptr;
+  Data_Get_Struct(self, struct node, ptr);
+  return ptr->index;
 }
+void node_idx_set(VALUE self, long index){
+  struct node *ptr;
+  Data_Get_Struct(self, struct node, ptr);
+  ptr->index = index;
+}
+
 VALUE node_pri(VALUE obj){
   struct node *ptr;
   Data_Get_Struct(obj, struct node, ptr);
@@ -30,6 +39,8 @@ VALUE node_val(VALUE obj){
   Data_Get_Struct(obj, struct node, ptr);
   return ptr->value;
 }
+
+
 
 
 typedef struct{
@@ -53,93 +64,202 @@ int compare(VALUE a, VALUE b){
   //   return rb_str_cmp(a, b);
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
+
 void heap_mark(heap_struct *st){rb_gc_mark(st->heap);}
 void heap_free(heap_struct *st){free(st);}
 VALUE heap_alloc(VALUE klass){
   heap_struct *ptr=malloc(sizeof(heap_struct));
-  ptr->heap = rb_ary_new();
+  ptr->heap = rb_ary_new_capa(1);
+  rb_ary_push(ptr->heap, Qnil);
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
 
-VALUE heap_push(VALUE self, VALUE value){
-  heap_struct *ptr;
-  Data_Get_Struct(self, heap_struct, ptr);
-  long index = RARRAY_LEN(ptr->heap);
-  rb_ary_push(ptr->heap, Qnil);
-  RARRAY_PTR_USE(ptr->heap, heap_ptr, {
-    while(index){
-      long pindex = (index-1)/2;
-      VALUE pvalue = heap_ptr[pindex];
-      int cmp=compare(pvalue, value);
+#define HEAP_PREPARE(name) heap_struct *name;Data_Get_Struct(self, heap_struct, name);
+
+void heap_up(VALUE self, VALUE node){
+  HEAP_PREPARE(ptr);
+  RARRAY_PTR_USE(ptr->heap, heap, {
+    long index = node_idx(node);
+    while(index > 1){
+      long pindex = index/2;
+      VALUE pnode = heap[pindex];
+      int cmp = compare(node_pri(pnode), node_pri(node));
       if(cmp<0)break;
-      heap_ptr[index] = pvalue;
+      heap[index] = pnode;
+      node_idx_set(pnode, index);
       index = pindex;
     }
-    heap_ptr[index] = value;
+    node_idx_set(node, index);
+    heap[index] = node;
   });
-  return self;
 }
-VALUE heap_pop(VALUE self){
-  heap_struct *ptr;
-  Data_Get_Struct(self, heap_struct, ptr);
+
+void heap_down(VALUE self, VALUE node){
+  HEAP_PREPARE(ptr);
   long length = RARRAY_LEN(ptr->heap);
-  if(length == 0)return Qnil;
-  long index = 0;
-  VALUE value = rb_ary_pop(ptr->heap);
-  length--;
-  if(length == 0)return value;
-  RARRAY_PTR_USE(ptr->heap, heap_ptr, {
-    VALUE data = heap_ptr[0];
-    while(1){
-      long lindex = 2*index+1;
-      long rindex = 2*index+2;
-      if(lindex >= length)break;
-      long cindex;
-      VALUE cvalue;
-      if(rindex >= length){
-        cindex = lindex;
-        cvalue = heap_ptr[lindex];
-      }else{
-        VALUE lvalue = heap_ptr[lindex];
-        VALUE rvalue = heap_ptr[rindex];
-        int cmp=compare(lvalue, rvalue);
-        if(cmp<0){cindex = lindex; cvalue = lvalue;}
-        else{cindex = rindex; cvalue = rvalue;}
+  RARRAY_PTR_USE(ptr->heap, heap, {
+    long index = node_idx(node);
+    while(2*index < length){
+      long lindex = 2*index;
+      VALUE lnode = heap[lindex];
+      if(lindex+1 < length){
+        VALUE rnode = heap[lindex+1];
+        int cmp = compare(node_pri(lnode), node_pri(rnode));
+        if(cmp >= 0){
+          lindex += 1;
+          lnode = rnode;
+        }
       }
-      int cmp=compare(value, cvalue);
+      int cmp = compare(node_pri(node), node_pri(lnode));
       if(cmp <= 0)break;
-      heap_ptr[index] = cvalue;
-      index = cindex;
+      node_idx_set(lnode, index);
+      heap[index] = lnode;
+      index = lindex;
     }
-    heap_ptr[index] = value;
-    return data;
+    node_idx_set(node, index);
+    heap[index] = node;
   });
 }
+
+VALUE node_update_priority(VALUE node, VALUE priority){
+  struct node *nptr;
+  heap_struct *hptr;
+  Data_Get_Struct(node, struct node, nptr);
+  Data_Get_Struct(nptr->heap, heap_struct, hptr);
+  VALUE priority_was = nptr->priority;
+  nptr->priority = priority;
+  int cmp = compare(priority, priority_was);
+  if(cmp == 0)return Qnil;
+  RARRAY_PTR_USE(hptr->heap, heap, {
+    if(heap[nptr->index] != node)return Qnil;
+  });
+  if(cmp < 0){
+    heap_up(nptr->heap, node);
+  }else{
+    heap_down(nptr->heap, node);
+  }
+  return Qnil;
+}
+
+
+VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
+  HEAP_PREPARE(ptr);
+  long length = RARRAY_LEN(ptr->heap);
+  VALUE node = node_alloc_internal(length, self, priority, value);
+  rb_ary_push(ptr->heap, node);
+  heap_up(self, node);
+  return node;
+}
+
+#define OPTHASH_GIVEN_P(opts) \
+    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+static ID id_priority;
+VALUE heap_enq(int argc, VALUE *argv, VALUE self){
+  VALUE value;
+  VALUE opts, priority, pri;
+  if (OPTHASH_GIVEN_P(opts)) {
+    ID keyword_ids[] = {id_priority};
+  	rb_get_kwargs(opts, keyword_ids, 0, 1, &pri);
+  }
+  rb_scan_args(argc, argv, "1", &value);
+    priority = pri==Qundef ? value : pri;
+  return heap_enq_vp(self, value, priority);
+}
+VALUE heap_push(VALUE self, VALUE value){
+  return heap_enq_vp(self, value, value);
+}
+VALUE heap_push_multiple(int argc, VALUE *argv, VALUE self){
+  VALUE nodes = rb_ary_new_capa(argc);
+  for(int i=0;i<argc;i++)rb_ary_push(nodes, heap_push(self, argv[i]));
+  return nodes;
+}
+
+VALUE heap_deq_node(VALUE self){
+  HEAP_PREPARE(ptr);
+  long length = RARRAY_LEN(ptr->heap);
+  if(length == 1)return Qnil;
+  RARRAY_PTR_USE(ptr->heap, heap, {
+    VALUE first = heap[1];
+    VALUE node = rb_ary_pop(ptr->heap);
+    if(length > 1){
+      node_idx_set(node, 1);
+      heap_down(self, node);
+    }
+    return first;
+  });
+}
+VALUE heap_deq(VALUE self){
+  VALUE node = heap_deq_node(self);
+  if(node == Qnil)return Qnil;
+  return node_val(node);
+}
+VALUE heap_deq_with_priority(VALUE self){
+  VALUE node = heap_deq_node(self);
+  if(node == Qnil)return Qnil;
+  return rb_ary_new_from_args(2, node_val(node), node_pri(node));
+}
+
+// VALUE heap_pop(VALUE self){
+//   heap_struct *ptr;
+//   Data_Get_Struct(self, heap_struct, ptr);
+//   long length = RARRAY_LEN(ptr->heap);
+//   if(length == 0)return Qnil;
+//   long index = 0;
+//   VALUE value = rb_ary_pop(ptr->heap);
+//   length--;
+//   if(length == 0)return value;
+//   RARRAY_PTR_USE(ptr->heap, heap_ptr, {
+//     VALUE data = heap_ptr[0];
+//     while(1){
+//       long lindex = 2*index+1;
+//       long rindex = 2*index+2;
+//       if(lindex >= length)break;
+//       long cindex;
+//       VALUE cvalue;
+//       if(rindex >= length){
+//         cindex = lindex;
+//         cvalue = heap_ptr[lindex];
+//       }else{
+//         VALUE lvalue = heap_ptr[lindex];
+//         VALUE rvalue = heap_ptr[rindex];
+//         int cmp=compare(lvalue, rvalue);
+//         if(cmp<0){cindex = lindex; cvalue = lvalue;}
+//         else{cindex = rindex; cvalue = rvalue;}
+//       }
+//       int cmp=compare(value, cvalue);
+//       if(cmp <= 0)break;
+//       heap_ptr[index] = cvalue;
+//       index = cindex;
+//     }
+//     heap_ptr[index] = value;
+//     return data;
+//   });
+// }
 VALUE heap_hoge(VALUE self){
   heap_struct *ptr;
   Data_Get_Struct(self, heap_struct, ptr);
   return ptr->heap;
 }
 
-
-
 void Init_ruby_heap(void){
+  id_priority = rb_intern("priority");
   id_cmp = rb_intern("<=>");
 
   node_class = rb_define_class("CExtHeap::Node", rb_cObject);
-  rb_define_alloc_func(node_class, node_alloc);
   rb_define_method(node_class, "priority", node_pri, 0);
+  rb_define_method(node_class, "priority=", node_update_priority, 1);
   rb_define_method(node_class, "value", node_val, 0);
 
   VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
   rb_define_const(heap_class, "Node", node_class);
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "hoge", heap_hoge, 0);
-  rb_define_method(heap_class, "push", heap_push, 1);
+  rb_define_method(heap_class, "push", heap_push_multiple, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
-  rb_define_method(heap_class, "enq", heap_push, 1);
-  rb_define_method(heap_class, "unshift", heap_push, 1);
-  rb_define_method(heap_class, "pop", heap_pop, 0);
-  rb_define_method(heap_class, "deq", heap_pop, 0);
-  rb_define_method(heap_class, "shift", heap_pop, 0);
+  rb_define_method(heap_class, "enq", heap_enq, -1);
+  rb_define_method(heap_class, "unshift", heap_push_multiple, -1);
+  rb_define_method(heap_class, "pop", heap_deq, 0);
+  rb_define_method(heap_class, "deq", heap_deq, 0);
+  rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
+  rb_define_method(heap_class, "shift", heap_deq, 0);
 }

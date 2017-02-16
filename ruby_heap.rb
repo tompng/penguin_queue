@@ -1,16 +1,32 @@
 class RHeap
   class Node
-    attr_accessor :index, :value, :priority
+    attr_accessor :heap, :index, :value, :priority
 
-    def initialize p, v
-      @priority, @value = p, v
+    def initialize h, p, v
+      @heap, @priority, @value = h, p, v
     end
 
     def to_s
       "#{self.class.name}(index: #{index}, priority: #{priority}, value: #{value})"
     end
 
+    def priority= priority
+      raise unless @heap.include? self
+      return if @priority == priority
+      priority_was = @priority
+      @priority = priority
+      if priority_was > priority
+        @heap.up self
+      else
+        @heap.down self
+      end
+    end
+
     alias inspect to_s
+  end
+
+  def include? node
+    @heap[node.index].object_id == node.object_id
   end
 
   def initialize &compare_by
@@ -29,7 +45,7 @@ class RHeap
 
   def enq value, priority: value
     priority = @compare_by.call value if @compare_by
-    node = Node.new priority, value
+    node = Node.new self, priority, value
     node.index = @heap.size
     @heap.push node
     up node
@@ -45,17 +61,17 @@ class RHeap
     [node.priority, node.value] if node
   end
 
-  def update node, priority
-    raise unless @heap[node.index].object_id == node.object_id
-    return if node.priority == priority
-    priority_was = node.priority
-    node.priority = priority
-    if priority_was > priority
-      up node
-    else
-      down node
-    end
-  end
+  # def update node, priority
+  #   raise unless @heap[node.index].object_id == node.object_id
+  #   return if node.priority == priority
+  #   priority_was = node.priority
+  #   node.priority = priority
+  #   if priority_was > priority
+  #     up node
+  #   else
+  #     down node
+  #   end
+  # end
 
   def deq_with_priority
     return nil if empty?
@@ -85,8 +101,6 @@ class RHeap
   def size
     @heap.size-1
   end
-
-  private
 
   def up node
     index = node.index
@@ -123,19 +137,3 @@ class RHeap
     @heap[index] = node
   end
 end
-
-def assert a, b
-  raise "assert failed\n  #{a}\n  #{b}" unless a==b
-end
-h=RHeap.new
-10.times.map{|i|2*i}.shuffle.map{|i|h.enq i.to_s, priority: i}
-assert 5.times.map{h.deq}, %w(0 2 4 6 8)
-10.times.map{|i|2*i+1}.shuffle.map{|i|h.enq i.to_s, priority: i}
-assert 15.times.map{h.deq}, %w(1 3 5 7 9 10 11 12 13 14 15 16 17 18 19)
-nodes = 13.times.map{|i|h.enq i, priority: 13*i%13}
-nodes.each{|n|h.update n, n.value}
-assert 13.times.map{h.deq}, 13.times.to_a
-
-h2 = RHeap.new{|v|-v.to_i}
-h2.push(*20.times.map(&:to_s).shuffle)
-assert 10.times.map{h2.deq}, (10...20).map(&:to_s).reverse
