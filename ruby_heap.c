@@ -44,13 +44,8 @@ VALUE node_val(VALUE obj){
 
 
 typedef struct{
-  VALUE heap;
-}heap_struct;
-
-struct Heap {
-  struct RBasic basic;
   VALUE heap, compare_by;
-};
+}heap_struct;
 
 ID id_cmp;
 int compare(VALUE a, VALUE b){
@@ -71,6 +66,11 @@ VALUE heap_alloc(VALUE klass){
   heap_struct *ptr=malloc(sizeof(heap_struct));
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
+  if(rb_block_given_p()){
+    ptr->compare_by = rb_block_proc();
+  }else{
+    ptr->compare_by = Qnil;
+  }
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
 
@@ -141,9 +141,12 @@ VALUE node_update_priority(VALUE node, VALUE priority){
   return Qnil;
 }
 
-
+ID id_call;
 VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
   HEAP_PREPARE(ptr);
+  if(ptr->compare_by != Qnil){
+    priority = rb_funcall(ptr->compare_by, id_call, 1, value);
+  }
   long length = RARRAY_LEN(ptr->heap);
   VALUE node = node_alloc_internal(length, self, priority, value);
   rb_ary_push(ptr->heap, node);
@@ -199,42 +202,6 @@ VALUE heap_deq_with_priority(VALUE self){
   return rb_ary_new_from_args(2, node_val(node), node_pri(node));
 }
 
-// VALUE heap_pop(VALUE self){
-//   heap_struct *ptr;
-//   Data_Get_Struct(self, heap_struct, ptr);
-//   long length = RARRAY_LEN(ptr->heap);
-//   if(length == 0)return Qnil;
-//   long index = 0;
-//   VALUE value = rb_ary_pop(ptr->heap);
-//   length--;
-//   if(length == 0)return value;
-//   RARRAY_PTR_USE(ptr->heap, heap_ptr, {
-//     VALUE data = heap_ptr[0];
-//     while(1){
-//       long lindex = 2*index+1;
-//       long rindex = 2*index+2;
-//       if(lindex >= length)break;
-//       long cindex;
-//       VALUE cvalue;
-//       if(rindex >= length){
-//         cindex = lindex;
-//         cvalue = heap_ptr[lindex];
-//       }else{
-//         VALUE lvalue = heap_ptr[lindex];
-//         VALUE rvalue = heap_ptr[rindex];
-//         int cmp=compare(lvalue, rvalue);
-//         if(cmp<0){cindex = lindex; cvalue = lvalue;}
-//         else{cindex = rindex; cvalue = rvalue;}
-//       }
-//       int cmp=compare(value, cvalue);
-//       if(cmp <= 0)break;
-//       heap_ptr[index] = cvalue;
-//       index = cindex;
-//     }
-//     heap_ptr[index] = value;
-//     return data;
-//   });
-// }
 VALUE heap_hoge(VALUE self){
   heap_struct *ptr;
   Data_Get_Struct(self, heap_struct, ptr);
@@ -243,6 +210,7 @@ VALUE heap_hoge(VALUE self){
 
 void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
+  id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
 
   node_class = rb_define_class("CExtHeap::Node", rb_cObject);

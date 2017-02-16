@@ -5,10 +5,19 @@ unless ARGV.index('run')
 end
 require './ruby_heap.bundle'
 require './ruby_heap'
+require 'benchmark'
 rh=RHeap.new
 ch=CExtHeap.new
-t0=Time.now;100000.times{rh<<rand};t1=Time.now;100000.times{rh.deq};t2=Time.now;p [:ruby, t1-t0, t2-t1]
-t0=Time.now;100000.times{ch<<rand};t1=Time.now;100000.times{ch.deq};t2=Time.now;p [:c, t1-t0, t2-t1]
+bench = ->klass{
+  h = klass.new
+  tadd = Benchmark.measure{100000.times{h<<rand}}.real
+  taddremove = Benchmark.measure{100000.times{h<<rand;h.deq}}.real
+  tremove = Benchmark.measure{100000.times{h.deq}}.real
+  nodes = 100000.times.map{h << rand}
+  tupdate = Benchmark.measure{nodes.shuffle.each{|n|n.priority = rand}}.real
+  p [klass.name, tadd, taddremove, tremove, tupdate]
+}
+[RHeap, CExtHeap].each &bench
 
 arr=1000.times.map{rand}
 rh=RHeap.new
