@@ -7,7 +7,7 @@ class RHeap
     end
 
     def to_s
-      "#{self.class.name}(index: #{index}, priority: #{priority}, value: #{value})"
+      "#{self.class.name}{index: #{index}, priority: #{priority}, value: #{value}}"
     end
 
     def priority= priority

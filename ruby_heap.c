@@ -1,5 +1,7 @@
 #include <ruby.h>
 
+static ID id_priority, id_cmp, id_call;
+
 struct node {
   long index;
   VALUE heap, priority, value;
@@ -29,22 +31,31 @@ void node_idx_set(VALUE self, long index){
   ptr->index = index;
 }
 
-VALUE node_pri(VALUE obj){
+VALUE node_pri(VALUE self){
   struct node *ptr;
-  Data_Get_Struct(obj, struct node, ptr);
+  Data_Get_Struct(self, struct node, ptr);
   return ptr->priority;
 }
-VALUE node_val(VALUE obj){
+VALUE node_val(VALUE self){
   struct node *ptr;
-  Data_Get_Struct(obj, struct node, ptr);
+  Data_Get_Struct(self, struct node, ptr);
   return ptr->value;
+}
+VALUE node_inspect(VALUE self){
+  VALUE str = rb_str_buf_new(0);
+  rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
+  rb_str_buf_cat(str, "{priority: ", 11);
+  rb_str_buf_append(str, rb_inspect(node_pri(self)));
+  rb_str_buf_cat(str, ", value: ", 9);
+  rb_str_buf_append(str, rb_inspect(node_val(self)));
+  rb_str_buf_cat(str, "}", 1);
+  return str;
 }
 
 struct heap_data{
   VALUE heap, compare_by;
 };
 
-ID id_cmp;
 long compare(VALUE a, VALUE b){
   if(RB_FIXNUM_P(a)&&RB_FIXNUM_P(b))
     return (long)a > (long)b ? 1 : (long)a < (long)b ? -1 : 0;
@@ -138,7 +149,6 @@ VALUE node_update_priority(VALUE node, VALUE priority){
   return Qnil;
 }
 
-ID id_call;
 VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
   HEAP_PREPARE(ptr);
   if(ptr->compare_by != Qnil){
@@ -153,7 +163,6 @@ VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
 
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
-static ID id_priority;
 VALUE heap_enq(int argc, VALUE *argv, VALUE self){
   VALUE value;
   VALUE opts, priority, pri;
@@ -199,12 +208,6 @@ VALUE heap_deq_with_priority(VALUE self){
   return rb_ary_new_from_args(2, node_val(node), node_pri(node));
 }
 
-VALUE heap_hoge(VALUE self){
-  struct heap_data *ptr;
-  Data_Get_Struct(self, struct heap_data, ptr);
-  return ptr->heap;
-}
-
 void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
@@ -214,11 +217,12 @@ void Init_ruby_heap(void){
   rb_define_method(node_class, "priority", node_pri, 0);
   rb_define_method(node_class, "priority=", node_update_priority, 1);
   rb_define_method(node_class, "value", node_val, 0);
+  rb_define_method(node_class, "inspect", node_inspect, 0);
+  rb_define_method(node_class, "to_s", node_inspect, 0);
 
   VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
   rb_define_const(heap_class, "Node", node_class);
   rb_define_alloc_func(heap_class, heap_alloc);
-  rb_define_method(heap_class, "hoge", heap_hoge, 0);
   rb_define_method(heap_class, "push", heap_push_multiple, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
   rb_define_method(heap_class, "enq", heap_enq, -1);

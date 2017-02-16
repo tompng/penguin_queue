@@ -60,3 +60,5 @@ end
   h2.push(*20.times.map(&:to_s).shuffle)
   assert 10.times.map{h2.deq}, (10...20).map(&:to_s).reverse
 end
+
+binding.pry
