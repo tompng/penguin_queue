@@ -40,12 +40,9 @@ VALUE node_val(VALUE obj){
   return ptr->value;
 }
 
-
-
-
-typedef struct{
+struct heap_data{
   VALUE heap, compare_by;
-}heap_struct;
+};
 
 ID id_cmp;
 long compare(VALUE a, VALUE b){
@@ -60,10 +57,10 @@ long compare(VALUE a, VALUE b){
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
 
-void heap_mark(heap_struct *st){rb_gc_mark(st->heap);}
-void heap_free(heap_struct *st){free(st);}
+void heap_mark(struct heap_data *st){rb_gc_mark(st->heap);}
+void heap_free(struct heap_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
-  heap_struct *ptr=malloc(sizeof(heap_struct));
+  struct heap_data *ptr=malloc(sizeof(struct heap_data));
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
   if(rb_block_given_p()){
@@ -74,7 +71,7 @@ VALUE heap_alloc(VALUE klass){
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
 
-#define HEAP_PREPARE(name) heap_struct *name;Data_Get_Struct(self, heap_struct, name);
+#define HEAP_PREPARE(name) struct heap_data *name;Data_Get_Struct(self, struct heap_data, name);
 
 void heap_up(VALUE self, VALUE node){
   HEAP_PREPARE(ptr);
@@ -123,9 +120,9 @@ void heap_down(VALUE self, VALUE node){
 
 VALUE node_update_priority(VALUE node, VALUE priority){
   struct node *nptr;
-  heap_struct *hptr;
+  struct heap_data *hptr;
   Data_Get_Struct(node, struct node, nptr);
-  Data_Get_Struct(nptr->heap, heap_struct, hptr);
+  Data_Get_Struct(nptr->heap, struct heap_data, hptr);
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
   int cmp = compare(priority, priority_was);
@@ -203,8 +200,8 @@ VALUE heap_deq_with_priority(VALUE self){
 }
 
 VALUE heap_hoge(VALUE self){
-  heap_struct *ptr;
-  Data_Get_Struct(self, heap_struct, ptr);
+  struct heap_data *ptr;
+  Data_Get_Struct(self, struct heap_data, ptr);
   return ptr->heap;
 }
 
