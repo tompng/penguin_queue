@@ -55,10 +55,14 @@ end
   nodes = 13.times.map{|i|h.enq i, priority: 13*i%13}
   nodes.each{|n|n.priority = n.value}
   assert 13.times.map{h.deq}, 13.times.to_a
+  assert h.empty?, true
 
   h2 = klass.new{|v|-v.to_i}
   h2.push(*20.times.map(&:to_s).shuffle)
+  assert h2.empty?, false
+  assert h2.size, 20
   assert 10.times.map{h2.deq}, (10...20).map(&:to_s).reverse
+
 end
 
 binding.pry

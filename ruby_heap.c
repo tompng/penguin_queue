@@ -12,7 +12,7 @@ void node_mark(struct node *ptr){
   rb_gc_mark(ptr->priority);
   rb_gc_mark(ptr->value);
 }
-VALUE node_alloc_internal(int index, VALUE heap, VALUE priority, VALUE value){
+VALUE node_alloc_internal(long index, VALUE heap, VALUE priority, VALUE value){
   struct node *ptr = ALLOC(struct node);
   ptr->index = index;
   ptr->heap = heap;
@@ -71,7 +71,7 @@ long compare(VALUE a, VALUE b){
 void heap_mark(struct heap_data *st){rb_gc_mark(st->heap);}
 void heap_free(struct heap_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
-  struct heap_data *ptr=malloc(sizeof(struct heap_data));
+  struct heap_data *ptr=ALLOC(struct heap_data);
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
   if(rb_block_given_p()){
@@ -91,7 +91,7 @@ void heap_up(VALUE self, VALUE node){
     while(index > 1){
       long pindex = index/2;
       VALUE pnode = heap[pindex];
-      int cmp = compare(node_pri(pnode), node_pri(node));
+      long cmp = compare(node_pri(pnode), node_pri(node));
       if(cmp<0)break;
       heap[index] = pnode;
       node_idx_set(pnode, index);
@@ -112,13 +112,13 @@ void heap_down(VALUE self, VALUE node){
       VALUE lnode = heap[lindex];
       if(lindex+1 < length){
         VALUE rnode = heap[lindex+1];
-        int cmp = compare(node_pri(lnode), node_pri(rnode));
+        long cmp = compare(node_pri(lnode), node_pri(rnode));
         if(cmp >= 0){
           lindex += 1;
           lnode = rnode;
         }
       }
-      int cmp = compare(node_pri(node), node_pri(lnode));
+      long cmp = compare(node_pri(node), node_pri(lnode));
       if(cmp <= 0)break;
       node_idx_set(lnode, index);
       heap[index] = lnode;
@@ -136,7 +136,7 @@ VALUE node_update_priority(VALUE node, VALUE priority){
   Data_Get_Struct(nptr->heap, struct heap_data, hptr);
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
-  int cmp = compare(priority, priority_was);
+  long cmp = compare(priority, priority_was);
   if(cmp == 0)return Qnil;
   RARRAY_PTR_USE(hptr->heap, heap, {
     if(heap[nptr->index] != node)return Qnil;
@@ -208,6 +208,15 @@ VALUE heap_deq_with_priority(VALUE self){
   return rb_ary_new_from_args(2, node_val(node), node_pri(node));
 }
 
+VALUE heap_size(VALUE self){
+  HEAP_PREPARE(ptr);
+  return LONG2FIX(RARRAY_LEN(ptr->heap)-1);
+}
+VALUE heap_is_empty(VALUE self){
+  HEAP_PREPARE(ptr);
+  return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
+}
+
 void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
@@ -223,6 +232,8 @@ void Init_ruby_heap(void){
   VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
   rb_define_const(heap_class, "Node", node_class);
   rb_define_alloc_func(heap_class, heap_alloc);
+  rb_define_method(heap_class, "size", heap_size, 0);
+  rb_define_method(heap_class, "empty?", heap_is_empty, 0);
   rb_define_method(heap_class, "push", heap_push_multiple, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
   rb_define_method(heap_class, "enq", heap_enq, -1);
