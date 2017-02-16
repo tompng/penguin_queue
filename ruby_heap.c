@@ -183,6 +183,25 @@ VALUE heap_push_multiple(int argc, VALUE *argv, VALUE self){
   return nodes;
 }
 
+VALUE heap_first_node(VALUE self){
+  HEAP_PREPARE(ptr);
+  long length = RARRAY_LEN(ptr->heap);
+  if(length == 1)return Qnil;
+  RARRAY_PTR_USE(ptr->heap, heap, {
+    return heap[1];
+  });
+}
+VALUE heap_first(VALUE self){
+  VALUE node = heap_first_node(self);
+  if(node == Qnil)return Qnil;
+  return node_val(node);
+}
+VALUE heap_first_with_priority(VALUE self){
+  VALUE node = heap_first_node(self);
+  if(node == Qnil)return Qnil;
+  return rb_ary_new_from_args(2, node_val(node), node_pri(node));
+}
+
 VALUE heap_deq_node(VALUE self){
   HEAP_PREPARE(ptr);
   long length = RARRAY_LEN(ptr->heap);
@@ -243,6 +262,9 @@ void Init_ruby_heap(void){
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
   rb_define_method(heap_class, "inspect", heap_inspect, 0);
+  rb_define_method(heap_class, "first", heap_first, 0);
+  rb_define_method(heap_class, "first_node", heap_first_node, 0);
+  rb_define_method(heap_class, "first_with_priority", heap_first_with_priority, 0);
   rb_define_method(heap_class, "to_s", heap_inspect, 0);
   rb_define_method(heap_class, "push", heap_push_multiple, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
