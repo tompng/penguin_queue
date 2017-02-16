@@ -1,7 +1,7 @@
 #include <ruby.h>
 
 static ID id_priority, id_cmp, id_call;
-
+#define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr));
 struct node {
   long index;
   VALUE heap, priority, value;
@@ -44,11 +44,11 @@ VALUE node_val(VALUE self){
 VALUE node_inspect(VALUE self){
   VALUE str = rb_str_buf_new(0);
   rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
-  rb_str_buf_cat(str, "{priority: ", 11);
+  RB_STR_BUF_CAT(str, "{priority: ");
   rb_str_buf_append(str, rb_inspect(node_pri(self)));
-  rb_str_buf_cat(str, ", value: ", 9);
+  RB_STR_BUF_CAT(str, ", value: ");
   rb_str_buf_append(str, rb_inspect(node_val(self)));
-  rb_str_buf_cat(str, "}", 1);
+  RB_STR_BUF_CAT(str, "}");
   return str;
 }
 
@@ -216,6 +216,14 @@ VALUE heap_is_empty(VALUE self){
   HEAP_PREPARE(ptr);
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
+VALUE heap_inspect(VALUE self){
+  VALUE str = rb_str_buf_new(0);
+  rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
+  RB_STR_BUF_CAT(str, "{size: ");
+  rb_str_buf_append(str, rb_inspect(heap_size(self)));
+  RB_STR_BUF_CAT(str, "}");
+  return str;
+}
 
 void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
@@ -234,6 +242,8 @@ void Init_ruby_heap(void){
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
+  rb_define_method(heap_class, "inspect", heap_inspect, 0);
+  rb_define_method(heap_class, "to_s", heap_inspect, 0);
   rb_define_method(heap_class, "push", heap_push_multiple, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
   rb_define_method(heap_class, "enq", heap_enq, -1);
