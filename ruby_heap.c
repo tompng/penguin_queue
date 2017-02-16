@@ -1,7 +1,7 @@
 #include <ruby.h>
 
 static ID id_priority, id_cmp, id_call;
-#define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr));
+#define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
   long index;
   VALUE heap, priority, value;
