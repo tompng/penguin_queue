@@ -1,7 +1,46 @@
 #include <ruby.h>
+
+struct node {
+  long index;
+  VALUE heap, priority, value;
+};
+VALUE node_class;
+void node_mark(struct node *ptr){
+  rb_gc_mark(ptr->heap);
+  rb_gc_mark(ptr->priority);
+  rb_gc_mark(ptr->value);
+}
+VALUE node_alloc_internal(VALUE priority, VALUE value){
+  struct node *ptr = ALLOC(struct node);
+  ptr->priority = priority;
+  ptr->value = value;
+  return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
+}
+
+VALUE node_alloc(VALUE klass){
+  return node_alloc_internal(Qnil, Qfalse);
+}
+VALUE node_pri(VALUE obj){
+  struct node *ptr;
+  Data_Get_Struct(obj, struct node, ptr);
+  return ptr->priority;
+}
+VALUE node_val(VALUE obj){
+  struct node *ptr;
+  Data_Get_Struct(obj, struct node, ptr);
+  return ptr->value;
+}
+
+
 typedef struct{
   VALUE heap;
 }heap_struct;
+
+struct Heap {
+  struct RBasic basic;
+  VALUE heap, compare_by;
+};
+
 ID id_cmp;
 int compare(VALUE a, VALUE b){
   // if(RB_FIXNUM_P(a)&&RB_FIXNUM_P(b))
@@ -21,6 +60,7 @@ VALUE heap_alloc(VALUE klass){
   ptr->heap = rb_ary_new();
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
+
 VALUE heap_push(VALUE self, VALUE value){
   heap_struct *ptr;
   Data_Get_Struct(self, heap_struct, ptr);
@@ -81,9 +121,18 @@ VALUE heap_hoge(VALUE self){
   return ptr->heap;
 }
 
+
+
 void Init_ruby_heap(void){
   id_cmp = rb_intern("<=>");
+
+  node_class = rb_define_class("CExtHeap::Node", rb_cObject);
+  rb_define_alloc_func(node_class, node_alloc);
+  rb_define_method(node_class, "priority", node_pri, 0);
+  rb_define_method(node_class, "value", node_val, 0);
+
   VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
+  rb_define_const(heap_class, "Node", node_class);
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "hoge", heap_hoge, 0);
   rb_define_method(heap_class, "push", heap_push, 1);
