@@ -58,8 +58,12 @@ class RHeap
   end
 
   def first
+    first_node&.value
+  end
+
+  def first_with_priority
     node = first_node
-    [node.priority, node.value] if node
+    [node.value, node.priority] if node
   end
 
   # def update node, priority

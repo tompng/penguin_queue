@@ -13,8 +13,8 @@ bench = ->klass{
   tadd = Benchmark.measure{100000.times{h<<rand}}.real
   taddremove = Benchmark.measure{100000.times{h<<rand;h.deq}}.real
   tremove = Benchmark.measure{100000.times{h.deq}}.real
-  nodes = 100000.times.map{h << rand}
-  tupdate = Benchmark.measure{nodes.shuffle.each{|n|n.priority = rand}}.real
+  nodes = 100000.times.map{h << rand}.shuffle
+  tupdate = Benchmark.measure{nodes.each{|n|n.priority = rand}}.real
   p [klass.name, tadd, taddremove, tremove, tupdate]
 }
 [RHeap, CExtHeap].each &bench
@@ -48,7 +48,9 @@ assert cout, ans
   10.times.map{|i|2*i+1}.shuffle.map{|i|h.enq i.to_s, priority: i}
   assert 15.times.map{h.deq}, %w(1 3 5 7 9 10 11 12 13 14 15 16 17 18 19)
   nodes = 13.times.map{|i|h.enq i, priority: 13*i%13}
+  assert h.first_with_priority[1], 0
   nodes.each{|n|n.priority = n.value}
+  assert h.first, 0
   assert 13.times.map{h.deq}, 13.times.to_a
   assert h.empty?, true
 
