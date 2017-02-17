@@ -21,25 +21,25 @@ VALUE node_alloc_internal(long index, long serial, VALUE heap, VALUE priority, V
   ptr->value = value;
   return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
 }
-#define NODE_PREPARE(name) struct node *name;Data_Get_Struct(self, struct node, name);
+#define NODE_PREPARE(self, name) struct node *name;Data_Get_Struct(self, struct node, name);
 long node_idx(VALUE self){
-  NODE_PREPARE(ptr);
+  NODE_PREPARE(self, ptr);
   return ptr->index;
 }
 void node_idx_set(VALUE self, long index){
-  NODE_PREPARE(ptr);
+  NODE_PREPARE(self, ptr);
   ptr->index = index;
 }
 long node_sid(VALUE self){
-  NODE_PREPARE(ptr);
+  NODE_PREPARE(self, ptr);
   return ptr->serial;
 }
 VALUE node_pri(VALUE self){
-  NODE_PREPARE(ptr);
+  NODE_PREPARE(self, ptr);
   return ptr->priority;
 }
 VALUE node_val(VALUE self){
-  NODE_PREPARE(ptr);
+  NODE_PREPARE(self, ptr);
   return ptr->value;
 }
 VALUE node_inspect(VALUE self){
@@ -85,10 +85,10 @@ VALUE heap_alloc(VALUE klass){
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
 
-#define HEAP_PREPARE(name) struct heap_data *name;Data_Get_Struct(self, struct heap_data, name);
+#define HEAP_PREPARE(self, name) struct heap_data *name;Data_Get_Struct(self, struct heap_data, name);
 
 void heap_up(VALUE self, VALUE node){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   RARRAY_PTR_USE(ptr->heap, heap, {
     long index = node_idx(node);
     while(index > 1){
@@ -107,7 +107,7 @@ void heap_up(VALUE self, VALUE node){
 }
 
 void heap_down(VALUE self, VALUE node){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   RARRAY_PTR_USE(ptr->heap, heap, {
     long index = node_idx(node);
@@ -156,7 +156,7 @@ VALUE node_update_priority(VALUE node, VALUE priority){
 }
 
 VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   if(ptr->compare_by != Qnil){
     priority = rb_funcall(ptr->compare_by, id_call, 1, value);
   }
@@ -191,7 +191,7 @@ VALUE heap_push_multiple(int argc, VALUE *argv, VALUE self){
 }
 
 VALUE heap_first_node(VALUE self){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -210,7 +210,7 @@ VALUE heap_first_with_priority(VALUE self){
 }
 
 VALUE heap_deq_node(VALUE self){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -235,11 +235,11 @@ VALUE heap_deq_with_priority(VALUE self){
 }
 
 VALUE heap_size(VALUE self){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   return LONG2FIX(RARRAY_LEN(ptr->heap)-1);
 }
 VALUE heap_is_empty(VALUE self){
-  HEAP_PREPARE(ptr);
+  HEAP_PREPARE(self, ptr);
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
 VALUE heap_inspect(VALUE self){
@@ -255,7 +255,6 @@ void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
-
   node_class = rb_define_class("CExtHeap::Node", rb_cObject);
   rb_define_method(node_class, "priority", node_pri, 0);
   rb_define_method(node_class, "priority=", node_update_priority, 1);
