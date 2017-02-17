@@ -270,15 +270,8 @@ void Init_ruby_heap(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
-  node_class = rb_define_class("CExtHeap::Node", rb_cObject);
-  rb_define_method(node_class, "priority", node_pri, 0);
-  rb_define_method(node_class, "priority=", node_update_priority, 1);
-  rb_define_method(node_class, "value", node_val, 0);
-  rb_define_method(node_class, "inspect", node_inspect, 0);
-  rb_define_method(node_class, "to_s", node_inspect, 0);
 
   VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
-  rb_define_const(heap_class, "Node", node_class);
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
@@ -295,4 +288,12 @@ void Init_ruby_heap(void){
   rb_define_method(heap_class, "shift", heap_deq, -1);
   rb_define_method(heap_class, "deq", heap_deq, -1);
   rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
+
+  node_class = rb_define_class_under(heap_class, "Node", rb_cObject);
+  rb_undef_alloc_func(node_class);
+  rb_define_method(node_class, "priority", node_pri, 0);
+  rb_define_method(node_class, "priority=", node_update_priority, 1);
+  rb_define_method(node_class, "value", node_val, 0);
+  rb_define_method(node_class, "inspect", node_inspect, 0);
+  rb_define_method(node_class, "to_s", node_inspect, 0);
 }
