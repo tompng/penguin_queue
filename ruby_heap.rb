@@ -1,9 +1,9 @@
 class RHeap
   class Node
-    attr_accessor :heap, :index, :value, :priority
+    attr_accessor :heap, :index, :value, :priority, :serial
 
-    def initialize h, p, v
-      @heap, @priority, @value = h, p, v
+    def initialize h, p, v, s
+      @heap, @priority, @value, @serial = h, p, v, s
     end
 
     def to_s
@@ -31,6 +31,7 @@ class RHeap
 
   def initialize &compare_by
     @heap = []
+    @serial = 0
     @compare_by = compare_by
     @heap.unshift nil
   end
@@ -45,7 +46,7 @@ class RHeap
 
   def enq value, priority: value
     priority = @compare_by.call value if @compare_by
-    node = Node.new self, priority, value
+    node = Node.new self, priority, value, (@serial+=1)
     node.index = @heap.size
     @heap.push node
     up node
@@ -107,7 +108,7 @@ class RHeap
     while index > 1
       pindex = index/2
       pnode = @heap[pindex]
-      break if pnode.priority < node.priority
+      break if pnode.priority < node.priority || (pnode.priority == node.priority && pnode.serial < node.serial)
       pnode.index = index
       @heap[index] = pnode
       index = pindex
@@ -123,12 +124,12 @@ class RHeap
       lnode = @heap[lindex]
       if lindex+1 < @heap.size
         rnode = @heap[lindex+1]
-        unless lnode.priority < rnode.priority
+        unless lnode.priority < rnode.priority || (lnode.priority == rnode.priority && lnode.serial < rnode.serial)
           lindex += 1
           lnode = rnode
         end
       end
-      break unless node.priority > lnode.priority
+      break unless node.priority > lnode.priority || (node.priority == lnode.priority && node.serial > lnode.serial)
       lnode.index = index
       @heap[index] = lnode
       index = lindex

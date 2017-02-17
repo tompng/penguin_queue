@@ -43,7 +43,7 @@ puts :done
 
 
 def assert a, b
-  raise "assert failed\n #{a}\n  #{b}" unless a==b
+  puts "assert failed\n #{a}\n  #{b}" unless a==b
 end
 [RHeap, CExtHeap].each do |klass|
   h=klass.new
@@ -57,12 +57,16 @@ end
   assert 13.times.map{h.deq}, 13.times.to_a
   assert h.empty?, true
 
-  h2 = klass.new{|v|-v.to_i}
-  h2.push(*20.times.map(&:to_s).shuffle)
-  assert h2.empty?, false
-  assert h2.size, 20
-  assert 10.times.map{h2.deq}, (10...20).map(&:to_s).reverse
+  h = klass.new
+  10.times{|i|h.enq i, priority: 0}
+  arr = 10.times.map{h.deq}
+  assert arr, arr.sort
 
+  h = klass.new{|v|-v.to_i}
+  h.push(*20.times.map(&:to_s).shuffle)
+  assert h.empty?, false
+  assert h.size, 20
+  assert 10.times.map{h.deq}, (10...20).map(&:to_s).reverse
 end
 
 binding.pry
