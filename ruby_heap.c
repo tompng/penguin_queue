@@ -219,11 +219,28 @@ VALUE heap_deq_node(VALUE self){
     return first;
   });
 }
-VALUE heap_deq(VALUE self){
-  VALUE node = heap_deq_node(self);
-  if(node == Qnil)return Qnil;
-  NODE_PREPARE(node, nptr);
-  return nptr->value;
+VALUE heap_deq(int argc, VALUE *argv, VALUE self){
+  if(argc == 0){
+    VALUE node = heap_deq_node(self);
+    if(node == Qnil)return Qnil;
+    NODE_PREPARE(node, nptr);
+    return nptr->value;
+  }else{
+    VALUE nv;
+    rb_scan_args(argc, argv, "1", &nv);
+    long n = NUM2LONG(nv);
+    if(n<0)rb_raise(rb_eArgError, "negative array size");
+    HEAP_PREPARE(self, ptr);
+    long length = RARRAY_LEN(ptr->heap)-1;
+    if(n>length)n=length;
+    VALUE result = rb_ary_new_capa(n);
+    for(int i=0;i<n;i++){
+      VALUE node = heap_deq_node(self);
+      NODE_PREPARE(node, nptr);
+      rb_ary_push(result, nptr->value);
+    }
+    return result;
+  }
 }
 VALUE heap_deq_with_priority(VALUE self){
   VALUE node = heap_deq_node(self);
@@ -274,8 +291,8 @@ void Init_ruby_heap(void){
   rb_define_method(heap_class, "<<", heap_push, 1);
   rb_define_method(heap_class, "enq", heap_enq, -1);
   rb_define_method(heap_class, "unshift", heap_push_multiple, -1);
-  rb_define_method(heap_class, "pop", heap_deq, 0);
-  rb_define_method(heap_class, "deq", heap_deq, 0);
+  rb_define_method(heap_class, "pop", heap_deq, -1);
+  rb_define_method(heap_class, "shift", heap_deq, -1);
+  rb_define_method(heap_class, "deq", heap_deq, -1);
   rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
-  rb_define_method(heap_class, "shift", heap_deq, 0);
 }

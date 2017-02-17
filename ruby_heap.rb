@@ -66,18 +66,6 @@ class RHeap
     [node.value, node.priority] if node
   end
 
-  # def update node, priority
-  #   raise unless @heap[node.index].object_id == node.object_id
-  #   return if node.priority == priority
-  #   priority_was = node.priority
-  #   node.priority = priority
-  #   if priority_was > priority
-  #     up node
-  #   else
-  #     down node
-  #   end
-  # end
-
   def deq_with_priority
     return nil if empty?
     first = @heap[1]
@@ -89,8 +77,12 @@ class RHeap
     [first.value, first.priority]
   end
 
-  def deq
-    deq_with_priority&.first
+  def deq n=nil
+    if n
+      [n, size].min.times.map{deq_with_priority&.first}
+    else
+      deq_with_priority&.first
+    end
   end
 
   def to_s

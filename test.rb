@@ -56,8 +56,10 @@ assert cout, ans
 
   h = klass.new
   10.times{|i|h.enq i, priority: 0}
-  arr = 10.times.map{h.deq}
+  arr = 5.times.map{h.deq}
   assert arr, arr.sort
+  assert h.deq(2).size, 2
+  assert h.deq(3), [7,8,9]
 
   h = klass.new{|v|-v.to_i}
   h.push(*20.times.map(&:to_s).shuffle)
