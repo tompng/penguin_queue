@@ -3,7 +3,7 @@
 static ID id_priority, id_cmp, id_call;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
-  long index;
+  long index, serial;
   VALUE heap, priority, value;
 };
 VALUE node_class;
@@ -12,33 +12,34 @@ void node_mark(struct node *ptr){
   rb_gc_mark(ptr->priority);
   rb_gc_mark(ptr->value);
 }
-VALUE node_alloc_internal(long index, VALUE heap, VALUE priority, VALUE value){
+VALUE node_alloc_internal(long index, long serial, VALUE heap, VALUE priority, VALUE value){
   struct node *ptr = ALLOC(struct node);
   ptr->index = index;
+  ptr->serial = serial;
   ptr->heap = heap;
   ptr->priority = priority;
   ptr->value = value;
   return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
 }
+#define NODE_PREPARE(name) struct node *name;Data_Get_Struct(self, struct node, name);
 long node_idx(VALUE self){
-  struct node *ptr;
-  Data_Get_Struct(self, struct node, ptr);
+  NODE_PREPARE(ptr);
   return ptr->index;
 }
 void node_idx_set(VALUE self, long index){
-  struct node *ptr;
-  Data_Get_Struct(self, struct node, ptr);
+  NODE_PREPARE(ptr);
   ptr->index = index;
 }
-
+long node_sid(VALUE self){
+  NODE_PREPARE(ptr);
+  return ptr->serial;
+}
 VALUE node_pri(VALUE self){
-  struct node *ptr;
-  Data_Get_Struct(self, struct node, ptr);
+  NODE_PREPARE(ptr);
   return ptr->priority;
 }
 VALUE node_val(VALUE self){
-  struct node *ptr;
-  Data_Get_Struct(self, struct node, ptr);
+  NODE_PREPARE(ptr);
   return ptr->value;
 }
 VALUE node_inspect(VALUE self){
@@ -53,6 +54,7 @@ VALUE node_inspect(VALUE self){
 }
 
 struct heap_data{
+  long serial;
   VALUE heap, compare_by;
 };
 
@@ -67,11 +69,12 @@ long compare(VALUE a, VALUE b){
     return rb_str_cmp(a, b);
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
-
+long compare_sid(long a, long b){return a>b?1:a<b?-1:0;}
 void heap_mark(struct heap_data *st){rb_gc_mark(st->heap);}
 void heap_free(struct heap_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
   struct heap_data *ptr=ALLOC(struct heap_data);
+  ptr->serial = 0;
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
   if(rb_block_given_p()){
@@ -92,6 +95,7 @@ void heap_up(VALUE self, VALUE node){
       long pindex = index/2;
       VALUE pnode = heap[pindex];
       long cmp = compare(node_pri(pnode), node_pri(node));
+      if(!cmp)cmp=compare_sid(node_sid(pnode), node_sid(node));
       if(cmp<0)break;
       heap[index] = pnode;
       node_idx_set(pnode, index);
@@ -113,12 +117,14 @@ void heap_down(VALUE self, VALUE node){
       if(lindex+1 < length){
         VALUE rnode = heap[lindex+1];
         long cmp = compare(node_pri(lnode), node_pri(rnode));
+        if(!cmp)cmp=compare_sid(node_sid(lnode), node_sid(rnode));
         if(cmp >= 0){
           lindex += 1;
           lnode = rnode;
         }
       }
       long cmp = compare(node_pri(node), node_pri(lnode));
+      if(!cmp)cmp=compare_sid(node_sid(node), node_sid(lnode));
       if(cmp <= 0)break;
       node_idx_set(lnode, index);
       heap[index] = lnode;
@@ -155,7 +161,8 @@ VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
     priority = rb_funcall(ptr->compare_by, id_call, 1, value);
   }
   long length = RARRAY_LEN(ptr->heap);
-  VALUE node = node_alloc_internal(length, self, priority, value);
+  VALUE node = node_alloc_internal(length, ptr->serial, self, priority, value);
+  ptr->serial ++;
   rb_ary_push(ptr->heap, node);
   heap_up(self, node);
   return node;

@@ -32,19 +32,14 @@ rout, cout = [rh, ch].map do |heap|
   out
 end
 ans = arr.take(80).sort.take(50)+(arr.take(80).sort.drop(50)+arr.drop(80)).sort
-require 'pry'
-binding.pry unless rout == ans
-binding.pry unless cout == ans
-r=RHeap.new{|a|a/10}
-100.times.reverse_each{|i|r<<i}
-puts :done
-
-
-
 
 def assert a, b
   puts "assert failed\n #{a}\n  #{b}" unless a==b
 end
+
+assert rout, ans
+assert cout, ans
+
 [RHeap, CExtHeap].each do |klass|
   h=klass.new
   p klass.name
@@ -68,5 +63,5 @@ end
   assert h.size, 20
   assert 10.times.map{h.deq}, (10...20).map(&:to_s).reverse
 end
-
+require 'pry'
 binding.pry
