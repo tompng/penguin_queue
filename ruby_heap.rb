@@ -22,11 +22,28 @@ class RHeap
       end
     end
 
+    def remove
+      @heap.remove self
+    end
+
     alias inspect to_s
   end
 
   def include? node
     @heap[node.index].object_id == node.object_id
+  end
+
+  def remove node
+    raise unless include? node
+    replace_node = @heap.pop
+    return if replace_node == node
+    replace_node.index = node.index
+    @heap[node.index] = replace_node
+    if replace_node.priority > node.priority || (replace_node.priority == node.priority && replace_node.serial > node.serial)
+      up replace_node
+    else
+      down replace_node
+    end
   end
 
   def initialize &compare_by

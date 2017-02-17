@@ -60,6 +60,11 @@ assert cout, ans
   assert arr, arr.sort
   assert h.deq(2).size, 2
   assert h.deq(3), [7,8,9]
+  nodes = 10.times.to_a.shuffle.map{|i|h<<i}.shuffle.each{|n|
+    n.remove if [1,3,5].include? n.priority
+    h.remove n if [7,9].include? n.priority
+  }
+  assert 5.times.map{h.deq}, [0,2,4,6,8]
 
   h = klass.new{|v|-v.to_i}
   h.push(*20.times.map(&:to_s).shuffle)

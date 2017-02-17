@@ -27,5 +27,5 @@ heap.empty?
 heap.first
 heap.first_with_priority
 heap.first_node
-
+heap.remove node
 ```

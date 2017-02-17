@@ -130,14 +130,42 @@ void heap_down(VALUE self, VALUE node){
   });
 }
 
+VALUE heap_remove_node(VALUE self, VALUE node){
+  if(!rb_obj_is_kind_of(node, node_class))return Qnil;
+  HEAP_PREPARE(self, ptr);
+  NODE_PREPARE(node, nptr);
+  RARRAY_PTR_USE(ptr->heap, heap, {
+    if(heap[nptr->index] != node)return Qnil;
+    VALUE replace_node = rb_ary_pop(ptr->heap);
+    if(replace_node == node)return Qnil;
+    NODE_PREPARE(replace_node, rptr);
+    heap[nptr->index] = replace_node;
+    rptr->index = nptr->index;
+    long cmp = compare(rptr->priority, nptr->priority);
+    if(!cmp)cmp = compare_sid(rptr->serial, nptr->serial);
+    if(cmp < 0){
+      heap_up(nptr->heap, replace_node);
+    }else{
+      heap_down(nptr->heap, replace_node);
+    }
+  });
+  return Qnil;
+}
+
+VALUE node_remove(VALUE self){
+  NODE_PREPARE(self, nptr);
+  heap_remove_node(nptr->heap, self);
+  return Qnil;
+}
+
 VALUE node_update_priority(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
-  HEAP_PREPARE(nptr->heap, hptr);
+  HEAP_PREPARE(nptr->heap, ptr);
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
   long cmp = compare(priority, priority_was);
   if(cmp == 0)return Qnil;
-  RARRAY_PTR_USE(hptr->heap, heap, {
+  RARRAY_PTR_USE(ptr->heap, heap, {
     if(heap[nptr->index] != node)return Qnil;
   });
   if(cmp < 0){
@@ -288,6 +316,8 @@ void Init_ruby_heap(void){
   rb_define_method(heap_class, "shift", heap_deq, -1);
   rb_define_method(heap_class, "deq", heap_deq, -1);
   rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
+  rb_define_method(heap_class, "delete", heap_remove_node, 1);
+  rb_define_method(heap_class, "remove", heap_remove_node, 1);
 
   node_class = rb_define_class_under(heap_class, "Node", rb_cObject);
   rb_undef_alloc_func(node_class);
@@ -296,4 +326,5 @@ void Init_ruby_heap(void){
   rb_define_method(node_class, "value", node_val, 0);
   rb_define_method(node_class, "inspect", node_inspect, 0);
   rb_define_method(node_class, "to_s", node_inspect, 0);
+  rb_define_method(node_class, "remove", node_remove, 0);
 }
