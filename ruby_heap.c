@@ -30,6 +30,10 @@ VALUE node_val(VALUE self){
   NODE_PREPARE(self, ptr);
   return ptr->value;
 }
+VALUE node_val_set(VALUE self, VALUE val){
+  NODE_PREPARE(self, ptr);
+  return ptr->value = val;
+}
 VALUE node_inspect(VALUE self){
   NODE_PREPARE(self, nptr);
   VALUE str = rb_str_buf_new(0);
@@ -325,6 +329,7 @@ void Init_ruby_heap(void){
   rb_define_method(node_class, "priority", node_pri, 0);
   rb_define_method(node_class, "priority=", node_update_priority, 1);
   rb_define_method(node_class, "value", node_val, 0);
+  rb_define_method(node_class, "value=", node_val_set, 1);
   rb_define_method(node_class, "inspect", node_inspect, 0);
   rb_define_method(node_class, "to_s", node_inspect, 0);
   rb_define_method(node_class, "remove", node_remove, 0);

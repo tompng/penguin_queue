@@ -71,6 +71,8 @@ assert cout, ans
   assert h.empty?, false, msg: 'not empty'
   assert h.size, 20, msg: 'size'
   assert 10.times.map{h.deq}, (10...20).map(&:to_s).reverse, msg: 'compare by'
+  h.first_node.value=:hello
+  assert h.first, :hello
 end
 require 'pry'
 binding.pry
