@@ -1,10 +1,5 @@
 require "bundler/gem_tasks"
-require "rake/extensiontask"
 require "rake/testtask"
-
-Rake::ExtensionTask.new "penguin_queue" do |ext|
-  ext.lib_dir = "lib/penguin_queue"
-end
 
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
@@ -12,4 +7,12 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList['test/**/*_test.rb']
 end
 
-task :default => :test
+require "rake/extensiontask"
+
+task :build => :compile
+
+Rake::ExtensionTask.new("penguin_queue") do |ext|
+  ext.lib_dir = "lib/penguin_queue"
+end
+
+task :default => [:clobber, :compile, :test]
