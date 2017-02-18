@@ -88,8 +88,8 @@ void heap_up(VALUE self, VALUE node){
       long cmp = compare(pptr->priority, nptr->priority);
       if(!cmp)cmp=compare_sid(pptr->serial, nptr->serial);
       if(cmp<0)break;
+      pptr->index = index;
       heap[index] = pnode;
-      nptr->index = index;
       index = pindex;
     }
     nptr->index = index;
@@ -134,8 +134,9 @@ VALUE heap_remove_node(VALUE self, VALUE node){
   if(!rb_obj_is_kind_of(node, node_class))return Qnil;
   HEAP_PREPARE(self, ptr);
   NODE_PREPARE(node, nptr);
+  long length = RARRAY_LEN(ptr->heap);
+  if(nptr->index >= length || RARRAY_AREF(ptr->heap, nptr->index) != node)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
-    if(heap[nptr->index] != node)return Qnil;
     VALUE replace_node = rb_ary_pop(ptr->heap);
     if(replace_node == node)return Qnil;
     NODE_PREPARE(replace_node, rptr);
@@ -143,10 +144,10 @@ VALUE heap_remove_node(VALUE self, VALUE node){
     rptr->index = nptr->index;
     long cmp = compare(rptr->priority, nptr->priority);
     if(!cmp)cmp = compare_sid(rptr->serial, nptr->serial);
-    if(cmp < 0){
-      heap_up(nptr->heap, replace_node);
-    }else{
+    if(cmp > 0){
       heap_down(nptr->heap, replace_node);
+    }else{
+      heap_up(nptr->heap, replace_node);
     }
   });
   return Qnil;
