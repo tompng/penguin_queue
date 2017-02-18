@@ -63,7 +63,10 @@ long compare(VALUE a, VALUE b){
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
 long compare_sid(long a, long b){return a>b?1:a<b?-1:0;}
-void heap_mark(struct heap_data *st){rb_gc_mark(st->heap);}
+void heap_mark(struct heap_data *st){
+  rb_gc_mark(st->heap);
+  rb_gc_mark(st->compare_by);
+}
 void heap_free(struct heap_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
   struct heap_data *ptr=ALLOC(struct heap_data);
@@ -196,15 +199,15 @@ VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
 
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+
 VALUE heap_enq(int argc, VALUE *argv, VALUE self){
-  VALUE value;
-  VALUE opts, priority, pri;
+  VALUE value, opts, priority, pri  = Qundef;
   if (OPTHASH_GIVEN_P(opts)) {
     ID keyword_ids[] = {id_priority};
   	rb_get_kwargs(opts, keyword_ids, 0, 1, &pri);
   }
   rb_scan_args(argc, argv, "1", &value);
-    priority = pri==Qundef ? value : pri;
+  priority = (pri == Qundef) ? value : pri;
   return heap_enq_vp(self, value, priority);
 }
 VALUE heap_push(VALUE self, VALUE value){

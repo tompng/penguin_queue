@@ -7,9 +7,9 @@ class PenguinQueueTest < Minitest::Test
 
   def test_enq_deq
     h = PenguinQueue.new
-    10.times.map{|i|i}.map{|i|h.enq i.to_s}
+    10.times{|i|h.enq i.to_s}
     assert h.empty? == false
-    assert h.size, 10
+    assert h.size == 10
     assert 10.times.map{h.deq} == 10.times.map(&:to_s)
     assert h.empty? == true
     assert h.size == 0
