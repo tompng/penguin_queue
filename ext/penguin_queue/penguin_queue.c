@@ -299,12 +299,12 @@ VALUE heap_inspect(VALUE self){
   return str;
 }
 
-void Init_ruby_heap(void){
+void Init_penguin_queue(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
 
-  VALUE heap_class = rb_define_class("CExtHeap", rb_cObject);
+  VALUE heap_class = rb_define_class("PenguinQueue", rb_cObject);
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
