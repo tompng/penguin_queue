@@ -1,29 +1,36 @@
-`ruby test.rb`
+# Priority Queue
+
+```ruby
+# Gemfile
+gem 'penguin_queue', git: 'https://github.com/tompng/penguin_queue'
+```
 
 ```ruby
 # priority queue
-10000.times { array<<rand; array.sort!; array.shift } #=> slow
-10000.times { heap<<rand; heap.deq } #=> fast
+10000.times { array << rand; array.sort!; array.shift } #=> slow
+10000.times { heap << rand; heap.deq } #=> fast
 
-h = CExtHeap.new
-10.times.to_a.shuffle.each { |i| h << i }
-10.times.map { h.deq }  #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+require 'penguin_queue'
+q = PenguinQueue.new
+10.times.to_a.shuffle.each { |i| q << i }
+10.times.map { q.deq }  #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-# update priority
-nodes = 10.times.to_a.shuffle.map { |i| h << i }
+# custom priority
+q.enq 'hello', priority: 0
+q.first_with_priority #=> ['hello', 0]
+q.deq_with_priority #=> ['hello', 0]
+
+# update priority, remove node
+nodes = 10.times.to_a.shuffle.map { |i| q << i }
 nodes.each { |n| n.priority = -n.priority }
-10.times.map { |h| h.deq } #=> [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+nodes.each_with_index{ |n| n.remove if n.value.odd? }
+q.size.times.map { q.deq } #=> [8, 6, 4, 2, 0]
+```
 
-# priority & value
-h.enq 'hello', priority: 0.5
-value, priority = h.deq_with_priority
-
-h = CExtHeap.new { |v| v.score }
-score_objects.each { |s| h << s }
-
+```ruby
 # Heap methods
 # class methods
-new new(&calc_priority_from_element_block)
+new new(&calc_priority_from_element_proc)
 # enqueue multiple
 push(*e) unshift(*e)
 # enqueue
@@ -31,16 +38,16 @@ push(*e) unshift(*e)
 # enqueue with custom priority
 enq(e, priority: p)
 # dequeue
-deq shift pop
+deq shift pop deque_with_priority
 # dequeue multiple
 deq(n) shift(n) pop(n)
 # fetch
 first first_with_priority first_node
 # remove
-remove(node)
+remove(node) delete(node)
 # other
 to_s inspect size empty?
 
 # Node methods
-remove value value= priority priority=
+remove delete value value= priority priority=
 ```

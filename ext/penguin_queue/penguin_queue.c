@@ -336,4 +336,5 @@ void Init_penguin_queue(void){
   rb_define_method(node_class, "inspect", node_inspect, 0);
   rb_define_method(node_class, "to_s", node_inspect, 0);
   rb_define_method(node_class, "remove", node_remove, 0);
+  rb_define_method(node_class, "delete", node_remove, 0);
 }
