@@ -21,11 +21,26 @@ value, priority = h.deq_with_priority
 h = CExtHeap.new { |v| v.score }
 score_objects.each { |s| h << s }
 
-# other methods
-heap.size
-heap.empty?
-heap.first
-heap.first_with_priority
-heap.first_node
-heap.remove node
+# Heap methods
+# class methods
+new new(&calc_priority_from_element_block)
+# enqueue multiple
+push(*e) unshift(*e)
+# enqueue
+<<(e) enq(e)
+# enqueue with custom priority
+enq(e, priority: p)
+# dequeue
+deq shift pop
+# dequeue multiple
+deq(n) shift(n) pop(n)
+# fetch
+first first_with_priority first_node
+# remove
+remove(node)
+# other
+to_s inspect size empty?
+
+# Node methods
+remove value value= priority priority=
 ```
