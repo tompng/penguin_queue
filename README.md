@@ -28,9 +28,8 @@ q.size.times.map { q.deq } #=> [8, 6, 4, 2, 0]
 ```
 
 ```ruby
-# Heap methods
-# class methods
-new new(&calc_priority_from_element_proc)
+# Queue methods
+PenguinQueue.new PenguinQueue.new(&calc_priority_from_element_proc)
 # enqueue multiple
 push(*e) unshift(*e)
 # enqueue
