@@ -1,0 +1,25 @@
+PATH
+  remote: .
+  specs:
+    penguin_queue (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.10.1)
+    rake (10.5.0)
+    rake-compiler (1.0.3)
+      rake
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.13)
+  minitest (~> 5.0)
+  penguin_queue!
+  rake (~> 10.0)
+  rake-compiler
+
+BUNDLED WITH
+   1.13.7
