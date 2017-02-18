@@ -40,9 +40,9 @@ class RHeap
     replace_node.index = node.index
     @heap[node.index] = replace_node
     if replace_node.priority > node.priority || (replace_node.priority == node.priority && replace_node.serial > node.serial)
-      up replace_node
-    else
       down replace_node
+    else
+      up replace_node
     end
   end
 

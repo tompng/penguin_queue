@@ -33,8 +33,8 @@ rout, cout = [rh, ch].map do |heap|
 end
 ans = arr.take(80).sort.take(50)+(arr.take(80).sort.drop(50)+arr.drop(80)).sort
 
-def assert a, b
-  puts "assert failed\n #{a}\n  #{b}" unless a==b
+def assert a, b, msg: nil
+  puts "assert failed: #{msg}\n #{a}\n  #{b}" unless a==b
 end
 
 assert rout, ans
@@ -52,7 +52,6 @@ assert cout, ans
   nodes.each{|n|n.priority = n.value}
   assert h.first, 0
   assert 13.times.map{h.deq}, 13.times.to_a
-  assert h.empty?, true
 
   h = klass.new
   10.times{|i|h.enq i, priority: 0}
@@ -60,17 +59,18 @@ assert cout, ans
   assert arr, arr.sort
   assert h.deq(2).size, 2
   assert h.deq(3), [7,8,9]
-  nodes = 10.times.to_a.shuffle.map{|i|h<<i}.shuffle.each{|n|
-    n.remove if [1,3,5].include? n.priority
-    h.remove n if [7,9].include? n.priority
+  nodes = 30.times.to_a.shuffle.map{|i|h<<i}.shuffle.each{|n|
+    n.remove if n.priority%3==1
+    h.remove n if n.priority%3==2
   }
-  assert 5.times.map{h.deq}, [0,2,4,6,8]
+  assert h.size.times.map{h.deq}, 30.times.select{|i|i%3==0}, msg: 'node remove'
 
   h = klass.new{|v|-v.to_i}
+  assert h.empty?, true, msg: 'empty'
   h.push(*20.times.map(&:to_s).shuffle)
-  assert h.empty?, false
-  assert h.size, 20
-  assert 10.times.map{h.deq}, (10...20).map(&:to_s).reverse
+  assert h.empty?, false, msg: 'not empty'
+  assert h.size, 20, msg: 'size'
+  assert 10.times.map{h.deq}, (10...20).map(&:to_s).reverse, msg: 'compare by'
 end
 require 'pry'
 binding.pry
