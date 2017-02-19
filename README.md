@@ -5,9 +5,13 @@
 ```
 
 # Install
+```
+gem install penguin_queue
+```
+
 ```ruby
 # Gemfile
-gem 'penguin_queue', git: 'https://github.com/tompng/penguin_queue'
+gem 'penguin_queue'
 ```
 
 # Usage
