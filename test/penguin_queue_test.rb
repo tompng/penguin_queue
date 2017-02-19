@@ -52,8 +52,8 @@ class PenguinQueueTest < Minitest::Test
   def test_value_update
     h = PenguinQueue.new
     h.push(*10.times)
-    assert h.first, 0
+    assert h.first == 0
     h.first_node.value = 1
-    assert h.first, 1
+    assert h.first == 1
   end
 end
