@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = %q{C Ext Priority Queue}
   spec.description   = %q{C Ext Priority Queue (binary heap)}
-  spec.homepage      = "https://github.com/tompng"
+  spec.homepage      = "https://github.com/tompng/penguin_queue"
   spec.license       = "MIT"
   spec.extensions    = %w[ext/penguin_queue/extconf.rb]
 
