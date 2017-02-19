@@ -46,7 +46,7 @@ VALUE node_inspect(VALUE self){
   return str;
 }
 
-struct heap_data{
+struct queue_data{
   long counter;
   VALUE heap, compare_by;
 };
@@ -63,13 +63,13 @@ long compare(VALUE a, VALUE b){
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
 long compare_id(long a, long b){return a>b?1:a<b?-1:0;}
-void heap_mark(struct heap_data *st){
+void heap_mark(struct queue_data *st){
   rb_gc_mark(st->heap);
   rb_gc_mark(st->compare_by);
 }
-void heap_free(struct heap_data *st){free(st);}
+void heap_free(struct queue_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
-  struct heap_data *ptr=ALLOC(struct heap_data);
+  struct queue_data *ptr=ALLOC(struct queue_data);
   ptr->counter = 0;
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
@@ -81,10 +81,10 @@ VALUE heap_alloc(VALUE klass){
   return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
 }
 
-#define HEAP_PREPARE(self, name) struct heap_data *name;Data_Get_Struct(self, struct heap_data, name);
+#define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
 
 void heap_up(VALUE self, VALUE node){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   RARRAY_PTR_USE(ptr->heap, heap, {
     NODE_PREPARE(node, nptr);
     long index = nptr->index;
@@ -105,7 +105,7 @@ void heap_up(VALUE self, VALUE node){
 }
 
 void heap_down(VALUE self, VALUE node){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   RARRAY_PTR_USE(ptr->heap, heap, {
     NODE_PREPARE(node, nptr);
@@ -139,7 +139,7 @@ void heap_down(VALUE self, VALUE node){
 
 VALUE heap_remove_node(VALUE self, VALUE node){
   if(!rb_obj_is_kind_of(node, node_class))return Qnil;
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   NODE_PREPARE(node, nptr);
   long length = RARRAY_LEN(ptr->heap);
   if(nptr->index >= length || RARRAY_AREF(ptr->heap, nptr->index) != node)return Qnil;
@@ -168,7 +168,7 @@ VALUE node_remove(VALUE self){
 
 VALUE node_update_priority(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
-  HEAP_PREPARE(nptr->heap, ptr);
+  QUEUE_PREPARE(nptr->heap, ptr);
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
   long cmp = compare(priority, priority_was);
@@ -185,7 +185,7 @@ VALUE node_update_priority(VALUE node, VALUE priority){
 }
 
 VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   if(ptr->compare_by != Qnil){
     priority = rb_funcall(ptr->compare_by, id_call, 1, value);
   }
@@ -220,7 +220,7 @@ VALUE heap_push_multiple(int argc, VALUE *argv, VALUE self){
 }
 
 VALUE heap_first_node(VALUE self){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -241,7 +241,7 @@ VALUE heap_first_with_priority(VALUE self){
 }
 
 VALUE heap_deq_node(VALUE self){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -266,7 +266,7 @@ VALUE heap_deq(int argc, VALUE *argv, VALUE self){
     rb_scan_args(argc, argv, "1", &nv);
     long n = NUM2LONG(nv);
     if(n<0)rb_raise(rb_eArgError, "negative array size");
-    HEAP_PREPARE(self, ptr);
+    QUEUE_PREPARE(self, ptr);
     long length = RARRAY_LEN(ptr->heap)-1;
     if(n>length)n=length;
     VALUE result = rb_ary_new_capa(n);
@@ -286,11 +286,11 @@ VALUE heap_deq_with_priority(VALUE self){
 }
 
 VALUE heap_size(VALUE self){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   return LONG2FIX(RARRAY_LEN(ptr->heap)-1);
 }
 VALUE heap_is_empty(VALUE self){
-  HEAP_PREPARE(self, ptr);
+  QUEUE_PREPARE(self, ptr);
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
 VALUE heap_inspect(VALUE self){
