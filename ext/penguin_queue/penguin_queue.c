@@ -3,7 +3,7 @@
 static ID id_priority, id_cmp, id_call;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
-  long index, serial;
+  long index, id;
   VALUE heap, priority, value;
 };
 VALUE node_class;
@@ -12,10 +12,10 @@ void node_mark(struct node *ptr){
   rb_gc_mark(ptr->priority);
   rb_gc_mark(ptr->value);
 }
-VALUE node_alloc_internal(long index, long serial, VALUE heap, VALUE priority, VALUE value){
+VALUE node_alloc_internal(long index, long id, VALUE heap, VALUE priority, VALUE value){
   struct node *ptr = ALLOC(struct node);
   ptr->index = index;
-  ptr->serial = serial;
+  ptr->id = id;
   ptr->heap = heap;
   ptr->priority = priority;
   ptr->value = value;
@@ -47,7 +47,7 @@ VALUE node_inspect(VALUE self){
 }
 
 struct heap_data{
-  long serial;
+  long counter;
   VALUE heap, compare_by;
 };
 
@@ -62,7 +62,7 @@ long compare(VALUE a, VALUE b){
     return rb_str_cmp(a, b);
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
 }
-long compare_sid(long a, long b){return a>b?1:a<b?-1:0;}
+long compare_id(long a, long b){return a>b?1:a<b?-1:0;}
 void heap_mark(struct heap_data *st){
   rb_gc_mark(st->heap);
   rb_gc_mark(st->compare_by);
@@ -70,7 +70,7 @@ void heap_mark(struct heap_data *st){
 void heap_free(struct heap_data *st){free(st);}
 VALUE heap_alloc(VALUE klass){
   struct heap_data *ptr=ALLOC(struct heap_data);
-  ptr->serial = 0;
+  ptr->counter = 0;
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
   if(rb_block_given_p()){
@@ -93,7 +93,7 @@ void heap_up(VALUE self, VALUE node){
       VALUE pnode = heap[pindex];
       NODE_PREPARE(pnode, pptr);
       long cmp = compare(pptr->priority, nptr->priority);
-      if(!cmp)cmp=compare_sid(pptr->serial, nptr->serial);
+      if(!cmp)cmp=compare_id(pptr->id, nptr->id);
       if(cmp<0)break;
       pptr->index = index;
       heap[index] = pnode;
@@ -118,7 +118,7 @@ void heap_down(VALUE self, VALUE node){
         VALUE rnode = heap[lindex+1];
         NODE_PREPARE(rnode, rptr);
         long cmp = compare(lptr->priority, rptr->priority);
-        if(!cmp)cmp=compare_sid(lptr->serial, rptr->serial);
+        if(!cmp)cmp=compare_id(lptr->id, rptr->id);
         if(cmp >= 0){
           lindex += 1;
           lnode = rnode;
@@ -126,7 +126,7 @@ void heap_down(VALUE self, VALUE node){
         }
       }
       long cmp = compare(nptr->priority, lptr->priority);
-      if(!cmp)cmp=compare_sid(nptr->serial, lptr->serial);
+      if(!cmp)cmp=compare_id(nptr->id, lptr->id);
       if(cmp <= 0)break;
       lptr->index = index;
       heap[index] = lnode;
@@ -150,7 +150,7 @@ VALUE heap_remove_node(VALUE self, VALUE node){
     heap[nptr->index] = replace_node;
     rptr->index = nptr->index;
     long cmp = compare(rptr->priority, nptr->priority);
-    if(!cmp)cmp = compare_sid(rptr->serial, nptr->serial);
+    if(!cmp)cmp = compare_id(rptr->id, nptr->id);
     if(cmp > 0){
       heap_down(nptr->heap, replace_node);
     }else{
@@ -190,8 +190,8 @@ VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
     priority = rb_funcall(ptr->compare_by, id_call, 1, value);
   }
   long length = RARRAY_LEN(ptr->heap);
-  VALUE node = node_alloc_internal(length, ptr->serial, self, priority, value);
-  ptr->serial ++;
+  VALUE node = node_alloc_internal(length, ptr->counter, self, priority, value);
+  ptr->counter++;
   rb_ary_push(ptr->heap, node);
   heap_up(self, node);
   return node;
