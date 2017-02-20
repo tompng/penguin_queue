@@ -347,7 +347,11 @@ VALUE queue_inspect(VALUE self){
   VALUE str = rb_str_buf_new(0);
   rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
   RB_STR_BUF_CAT(str, "{order: ");
-  RB_STR_BUF_CAT(str, QUEUE_PTR_IS_MIN(ptr) ? ":min" : ":max");
+  if(QUEUE_PTR_IS_MIN(ptr)){
+    RB_STR_BUF_CAT(str, ":min");
+  }else{
+    RB_STR_BUF_CAT(str, ":max");
+  }
   RB_STR_BUF_CAT(str, ", size: ");
   rb_str_buf_append(str, rb_inspect(queue_size(self)));
   RB_STR_BUF_CAT(str, "}");

@@ -117,8 +117,8 @@ class PenguinQueueTest < Minitest::Test
     maxq = PenguinQueue.new order: :max
     assert q.inspect == q.to_s
     assert q.inspect == minq.inspect
-    assert minq.inspect.downcase.include?('min')
-    assert maxq.inspect.downcase.include?('max')
+    assert minq.inspect == 'PenguinQueue{order: :min, size: 0}'
+    assert maxq.inspect == 'PenguinQueue{order: :max, size: 0}'
     node = q.enq('hello', priority: 'world')
     assert node.inspect.include?('value: "hello"')
     assert node.inspect.include?('priority: "world"')
