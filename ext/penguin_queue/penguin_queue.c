@@ -30,10 +30,6 @@ VALUE node_val(VALUE self){
   NODE_PREPARE(self, ptr);
   return ptr->value;
 }
-VALUE node_val_set(VALUE self, VALUE val){
-  NODE_PREPARE(self, ptr);
-  return ptr->value = val;
-}
 VALUE node_inspect(VALUE self){
   NODE_PREPARE(self, nptr);
   VALUE str = rb_str_buf_new(0);
@@ -199,24 +195,41 @@ VALUE node_remove(VALUE self){
   return Qnil;
 }
 
-VALUE node_update_priority(VALUE node, VALUE priority){
+void node_update_priority_internal(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
   QUEUE_PREPARE(nptr->queue, ptr);
-  if(ptr->compare_by != Qnil)rb_raise(rb_eRuntimeError, "priority update not supported on queue initialized with block");
   int sgn = ptr->compare_sgn;
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
   long cmp = compare(priority, priority_was)*sgn;
-  if(cmp == 0)return Qnil;
+  if(cmp == 0)return;
   RARRAY_PTR_USE(ptr->heap, heap, {
-    if(heap[nptr->index] != node)return Qnil;
+    if(heap[nptr->index] != node)return;
   });
   if(cmp < 0){
     queue_up(nptr->queue, node);
   }else{
     queue_down(nptr->queue, node);
   }
-  return Qnil;
+}
+
+VALUE node_update_priority(VALUE node, VALUE priority){
+  NODE_PREPARE(node, nptr);
+  QUEUE_PREPARE(nptr->queue, ptr);
+  if(ptr->compare_by != Qnil)rb_raise(rb_eRuntimeError, "priority update not supported on queue initialized with block");
+  node_update_priority_internal(node, priority);
+  return priority;
+}
+
+VALUE node_update_value(VALUE node, VALUE value){
+  NODE_PREPARE(node, nptr);
+  QUEUE_PREPARE(nptr->queue, ptr);
+  nptr->value = value;
+  if(ptr->compare_by != Qnil){
+    VALUE priority = rb_funcall(ptr->compare_by, id_call, 1, value);
+    node_update_priority_internal(node, priority);
+  }
+  return value;
 }
 
 VALUE queue_enq_vp(VALUE self, VALUE value, VALUE priority){
@@ -367,7 +380,7 @@ void Init_penguin_queue(void){
   rb_define_method(node_class, "priority", node_pri, 0);
   rb_define_method(node_class, "priority=", node_update_priority, 1);
   rb_define_method(node_class, "value", node_val, 0);
-  rb_define_method(node_class, "value=", node_val_set, 1);
+  rb_define_method(node_class, "value=", node_update_value, 1);
   rb_define_method(node_class, "inspect", node_inspect, 0);
   rb_define_method(node_class, "to_s", node_inspect, 0);
   rb_define_method(node_class, "remove", node_remove, 0);

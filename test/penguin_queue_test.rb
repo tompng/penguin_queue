@@ -94,6 +94,13 @@ class PenguinQueueTest < Minitest::Test
     assert err==:error
   end
 
+  def test_value_update_with_proc_handling
+    q = PenguinQueue.new{|n|n.size}
+    nodes = 10.times.map{|i|q<<'a'*i}
+    nodes.shuffle.each{|n|n.value = 'b'*(n.priority*3%10)}
+    assert 10.times.map{q.deq} == 10.times.map{|i|'b'*i}
+  end
+
   def test_queue_methods
     enq_methods = %i(<< enq push unshift)
     deq_methods = %i(deq shift pop poll deq_with_priority)
