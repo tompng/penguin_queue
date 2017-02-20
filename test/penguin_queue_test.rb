@@ -114,6 +114,19 @@ class PenguinQueueTest < Minitest::Test
     assert methods.sort == PenguinQueue.public_instance_methods(false).sort
   end
 
+  def test_performance
+    bench = ->(n,m){
+      q=PenguinQueue.new
+      n.times{q<<rand}
+      t=Time.now
+      m.times{q<<rand;q.deq}
+      Time.now-t
+    }
+    t100 = bench.call 100, 10000
+    t10000 = bench.call 10000, 10000
+    assert t10000 < t100*10 # O(log(N))
+  end
+
   def test_inspect
     q = PenguinQueue.new
     minq = PenguinQueue.new :min
