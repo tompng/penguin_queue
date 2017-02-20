@@ -27,11 +27,11 @@ class PenguinQueueTest < Minitest::Test
   end
 
   def test_same_priority
-    qmin = PenguinQueue.new order: :min
+    qmin = PenguinQueue.new :min
     10.times{|i|qmin.enq i, priority: 0}
     arr = qmin.deq(10)
     assert arr == arr.sort
-    qmax = PenguinQueue.new order: :max
+    qmax = PenguinQueue.new :max
     10.times{|i|qmax.enq i, priority: 0}
     arr = qmax.deq(10)
     assert arr == arr.sort
@@ -81,10 +81,10 @@ class PenguinQueueTest < Minitest::Test
   end
 
   def test_init_option
-    q = PenguinQueue.new(order: :minmax) rescue nil
-    assert q.nil?
-    minq = PenguinQueue.new order: :min
-    maxq = PenguinQueue.new order: :max
+    q = PenguinQueue.new(:minmax) rescue :err
+    assert :err
+    minq = PenguinQueue.new :min
+    maxq = PenguinQueue.new :max
     10.times.to_a.shuffle.each{|i|minq<<i;maxq<<i;}
     assert 10.times.map{minq.deq} == 10.times.to_a
     assert 10.times.map{maxq.deq} == 10.times.to_a.reverse
@@ -116,8 +116,8 @@ class PenguinQueueTest < Minitest::Test
 
   def test_inspect
     q = PenguinQueue.new
-    minq = PenguinQueue.new order: :min
-    maxq = PenguinQueue.new order: :max
+    minq = PenguinQueue.new :min
+    maxq = PenguinQueue.new :max
     assert q.inspect == q.to_s
     assert q.inspect == minq.inspect
     assert minq.inspect == 'PenguinQueue{order: :min, size: 0}'
@@ -129,8 +129,8 @@ class PenguinQueueTest < Minitest::Test
 
   def test_min_max
     q = PenguinQueue.new
-    minq = PenguinQueue.new order: :min
-    maxq = PenguinQueue.new order: :max
+    minq = PenguinQueue.new :min
+    maxq = PenguinQueue.new :max
     assert q.min? && !q.max?
     assert minq.min? && !minq.max?
     assert !maxq.min? && maxq.max?

@@ -38,7 +38,7 @@ pq.size.times.map { pq.deq } #=> [8, 6, 4, 2, 0]
 ```ruby
 # initialize
 PenguinQueue.new
-PenguinQueue.new(order: :max) # min(default) or max
+PenguinQueue.new(order) # min(default) or max
 PenguinQueue.new(&calc_priority_from_element_proc)
 # enqueue
 <<(e) enq(e) push(e) unshift(e)

@@ -89,10 +89,8 @@ VALUE queue_alloc(VALUE klass){
 VALUE queue_initialize(int argc, VALUE *argv, VALUE self){
   QUEUE_PREPARE(self, ptr);
   VALUE opts, order;
-  if(!OPTHASH_GIVEN_P(opts))return self;
-  ID keyword_ids[] = {id_order};
-	rb_get_kwargs(opts, keyword_ids, 0, 1, &order);
-  if(order == Qundef)return self;
+  if(argc == 0)return self;
+  rb_scan_args(argc, argv, "1", &order);
   if(order == ID2SYM(id_max)){
     ptr->compare_sgn = -1;
   }else if(order != ID2SYM(id_min)){
@@ -364,7 +362,6 @@ void Init_penguin_queue(void){
   id_cmp = rb_intern("<=>");
   id_max = rb_intern("max");
   id_min = rb_intern("min");
-  id_order = rb_intern("order");
 
   VALUE queue_class = rb_define_class("PenguinQueue", rb_cObject);
   rb_define_alloc_func(queue_class, queue_alloc);
