@@ -106,7 +106,7 @@ class PenguinQueueTest < Minitest::Test
     deq_methods = %i(deq shift pop poll deq_with_priority)
     fetch_methods = %i(first peek top first_with_priority first_node)
     remove_methods = %i(remove delete)
-    utility_methods = %i(to_s inspect clear size empty?)
+    utility_methods = %i(to_s inspect clear size empty? max? min?)
     methods = enq_methods + deq_methods + fetch_methods + remove_methods + utility_methods
     assert methods.sort == PenguinQueue.public_instance_methods(false).sort
   end
@@ -122,6 +122,15 @@ class PenguinQueueTest < Minitest::Test
     node = q.enq('hello', priority: 'world')
     assert node.inspect.include?('value: "hello"')
     assert node.inspect.include?('priority: "world"')
+  end
+
+  def test_min_max
+    q = PenguinQueue.new
+    minq = PenguinQueue.new order: :min
+    maxq = PenguinQueue.new order: :max
+    assert q.min? && !q.max?
+    assert minq.min? && !minq.max?
+    assert !maxq.min? && maxq.max?
   end
 
   def test_node_methods
