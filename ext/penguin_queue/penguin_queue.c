@@ -120,7 +120,7 @@ void queue_up(VALUE self, VALUE node){
       VALUE pnode = heap[pindex];
       NODE_PREPARE(pnode, pptr);
       long cmp = compare(pptr->priority, nptr->priority)*sgn;
-      if(!cmp)cmp=compare_id(pptr->id, nptr->id)*sgn;
+      if(!cmp)cmp=compare_id(pptr->id, nptr->id);
       if(cmp<0)break;
       pptr->index = index;
       heap[index] = pnode;
@@ -146,7 +146,7 @@ void queue_down(VALUE self, VALUE node){
         VALUE rnode = heap[lindex+1];
         NODE_PREPARE(rnode, rptr);
         long cmp = compare(lptr->priority, rptr->priority)*sgn;
-        if(!cmp)cmp=compare_id(lptr->id, rptr->id)*sgn;
+        if(!cmp)cmp=compare_id(lptr->id, rptr->id);
         if(cmp >= 0){
           lindex += 1;
           lnode = rnode;
@@ -154,7 +154,7 @@ void queue_down(VALUE self, VALUE node){
         }
       }
       long cmp = compare(nptr->priority, lptr->priority)*sgn;
-      if(!cmp)cmp=compare_id(nptr->id, lptr->id)*sgn;
+      if(!cmp)cmp=compare_id(nptr->id, lptr->id);
       if(cmp <= 0)break;
       lptr->index = index;
       heap[index] = lnode;
@@ -179,7 +179,7 @@ VALUE queue_remove_node(VALUE self, VALUE node){
     heap[nptr->index] = replace_node;
     rptr->index = nptr->index;
     long cmp = compare(rptr->priority, nptr->priority)*sgn;
-    if(!cmp)cmp = compare_id(rptr->id, nptr->id)*sgn;
+    if(!cmp)cmp = compare_id(rptr->id, nptr->id);
     if(cmp > 0){
       queue_down(nptr->queue, replace_node);
     }else{
