@@ -53,7 +53,7 @@ first peek top first_with_priority first_node
 # remove
 remove(node) delete(node)
 # other
-to_s inspect clear size empty?
+to_s inspect clear size empty? min? max?
 
 # PenguinQueue::Node
 remove delete value value= priority priority= to_s inspect

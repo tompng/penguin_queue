@@ -334,6 +334,14 @@ VALUE queue_is_empty(VALUE self){
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
 #define QUEUE_PTR_IS_MIN(ptr) ((ptr)->compare_sgn==1)
+VALUE queue_is_min(VALUE self){
+  QUEUE_PREPARE(self, ptr);
+  return QUEUE_PTR_IS_MIN(ptr) ? Qtrue : Qfalse;
+}
+VALUE queue_is_max(VALUE self){
+  QUEUE_PREPARE(self, ptr);
+  return QUEUE_PTR_IS_MIN(ptr) ? Qfalse : Qtrue;
+}
 VALUE queue_inspect(VALUE self){
   QUEUE_PREPARE(self, ptr);
   VALUE str = rb_str_buf_new(0);
@@ -378,6 +386,8 @@ void Init_penguin_queue(void){
   rb_define_method(queue_class, "deq_with_priority", queue_deq_with_priority, 0);
   rb_define_method(queue_class, "delete", queue_remove_node, 1);
   rb_define_method(queue_class, "remove", queue_remove_node, 1);
+  rb_define_method(queue_class, "min?", queue_is_min, 0);
+  rb_define_method(queue_class, "max?", queue_is_max, 0);
 
   node_class = rb_define_class_under(queue_class, "Node", rb_cObject);
   rb_undef_alloc_func(node_class);
