@@ -11,6 +11,8 @@ class PenguinQueueTest < Minitest::Test
     assert q.empty? == false
     assert q.size == 10
     assert 10.times.map{q.deq} == 10.times.map(&:to_s)
+    10.times{|i|q.enq i.to_s}
+    assert q.deq(10) == 10.times.map(&:to_s)
     assert q.empty? == true
     assert q.size == 0
   end
@@ -25,12 +27,13 @@ class PenguinQueueTest < Minitest::Test
   end
 
   def test_same_priority
-    q = PenguinQueue.new
-    10.times{|i|q.enq i, priority: 0}
-    arr1 = 5.times.map{q.deq}
-    arr2 = q.deq 2
-    arr3 = q.deq 3
-    arr = arr1+arr2+arr3
+    qmin = PenguinQueue.new order: :min
+    10.times{|i|qmin.enq i, priority: 0}
+    arr = qmin.deq(10)
+    assert arr == arr.sort
+    qmax = PenguinQueue.new order: :max
+    10.times{|i|qmax.enq i, priority: 0}
+    arr = qmax.deq(10)
     assert arr == arr.sort
   end
 
