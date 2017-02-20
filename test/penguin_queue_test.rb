@@ -76,4 +76,18 @@ class PenguinQueueTest < Minitest::Test
     10.times.to_a.shuffle.each{|i|q<<i}
     assert 10.times.map{q.deq} == 10.times.to_a
   end
+
+  def test_methods
+    enq_methods = %i(<< enq push unshift)
+    deq_methods = %i(deq shift pop poll deq_with_priority)
+    fetch_methods = %i(first peek top first_with_priority first_node)
+    remove_methods = %i(remove delete)
+    utility_methods = %i(to_s inspect clear size empty?)
+    [enq_methods, deq_methods, fetch_methods, remove_methods, utility_methods].each do |methods|
+      assert methods.all?{|m|PenguinQueue.public_instance_methods.include? m}
+    end
+
+    node_methods = %i(remove delete value value= priority priority=)
+    assert node_methods.all?{|m|PenguinQueue::Node.public_instance_methods.include? m}
+  end
 end

@@ -43,15 +43,15 @@ PenguinQueue.new PenguinQueue.new(&calc_priority_from_element_proc)
 # enqueue with custom priority
 enq(e, priority: p) push(e, priority: p) unshift(e, priority: e)
 # dequeue
-deq shift pop poll deque_with_priority
+deq shift pop poll deq_with_priority
 # dequeue multiple
-deq(n) shift(n) pop(n)
+deq(n) shift(n) pop(n) poll(n)
 # fetch
 first peek top first_with_priority first_node
 # remove
 remove(node) delete(node)
 # other
-to_s inspect size empty?
+to_s inspect clear size empty?
 
 # PenguinQueue::Node
 remove delete value value= priority priority=
