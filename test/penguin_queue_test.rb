@@ -111,6 +111,19 @@ class PenguinQueueTest < Minitest::Test
     assert methods.sort == PenguinQueue.public_instance_methods(false).sort
   end
 
+  def test_inspect
+    q = PenguinQueue.new
+    minq = PenguinQueue.new order: :min
+    maxq = PenguinQueue.new order: :max
+    assert q.inspect == q.to_s
+    assert q.inspect == minq.inspect
+    assert minq.inspect.downcase.include?('min')
+    assert maxq.inspect.downcase.include?('max')
+    node = q.enq('hello', priority: 'world')
+    assert node.inspect.include?('value: "hello"')
+    assert node.inspect.include?('priority: "world"')
+  end
+
   def test_node_methods
     methods = %i(remove delete value value= priority priority= inspect to_s)
     assert methods.sort == PenguinQueue::Node.public_instance_methods(false).sort

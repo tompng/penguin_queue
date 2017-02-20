@@ -333,10 +333,14 @@ VALUE queue_is_empty(VALUE self){
   QUEUE_PREPARE(self, ptr);
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
+#define QUEUE_PTR_IS_MIN(ptr) ((ptr)->compare_sgn==1)
 VALUE queue_inspect(VALUE self){
+  QUEUE_PREPARE(self, ptr);
   VALUE str = rb_str_buf_new(0);
   rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
-  RB_STR_BUF_CAT(str, "{size: ");
+  RB_STR_BUF_CAT(str, "{order: ");
+  RB_STR_BUF_CAT(str, QUEUE_PTR_IS_MIN(ptr) ? ":min" : ":max");
+  RB_STR_BUF_CAT(str, ", size: ");
   rb_str_buf_append(str, rb_inspect(queue_size(self)));
   RB_STR_BUF_CAT(str, "}");
   return str;
