@@ -215,11 +215,6 @@ VALUE heap_enq(int argc, VALUE *argv, VALUE self){
 VALUE heap_push(VALUE self, VALUE value){
   return heap_enq_vp(self, value, value);
 }
-VALUE heap_push_multiple(int argc, VALUE *argv, VALUE self){
-  VALUE nodes = rb_ary_new_capa(argc);
-  for(int i=0;i<argc;i++)rb_ary_push(nodes, heap_push(self, argv[i]));
-  return nodes;
-}
 
 VALUE heap_first_node(VALUE self){
   QUEUE_PREPARE(self, ptr);
@@ -318,10 +313,10 @@ void Init_penguin_queue(void){
   rb_define_method(heap_class, "first_node", heap_first_node, 0);
   rb_define_method(heap_class, "first_with_priority", heap_first_with_priority, 0);
   rb_define_method(heap_class, "to_s", heap_inspect, 0);
-  rb_define_method(heap_class, "push", heap_push_multiple, -1);
+  rb_define_method(heap_class, "push", heap_enq, -1);
   rb_define_method(heap_class, "<<", heap_push, 1);
   rb_define_method(heap_class, "enq", heap_enq, -1);
-  rb_define_method(heap_class, "unshift", heap_push_multiple, -1);
+  rb_define_method(heap_class, "unshift", heap_enq, -1);
   rb_define_method(heap_class, "pop", heap_deq, -1);
   rb_define_method(heap_class, "shift", heap_deq, -1);
   rb_define_method(heap_class, "deq", heap_deq, -1);

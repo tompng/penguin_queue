@@ -45,7 +45,7 @@ class PenguinQueueTest < Minitest::Test
 
   def test_priority_proc
     q = PenguinQueue.new{|v|-v.to_i}
-    q.push(*20.times.map(&:to_s).shuffle)
+    20.times.map(&:to_s).shuffle.each{|n|q<<n}
     assert 10.times.map{q.deq} == (10...20).map(&:to_s).reverse
   end
 
@@ -61,7 +61,7 @@ class PenguinQueueTest < Minitest::Test
 
   def test_value_update
     q = PenguinQueue.new
-    q.push(*10.times)
+    10.times{|i|q<<i}
     assert q.first == 0
     q.first_node.value = 1
     assert q.first == 1

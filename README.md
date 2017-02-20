@@ -38,12 +38,10 @@ pq.size.times.map { pq.deq } #=> [8, 6, 4, 2, 0]
 ```ruby
 # PenguinQueue
 PenguinQueue.new PenguinQueue.new(&calc_priority_from_element_proc)
-# enqueue multiple
-push(e1, e2, ...) unshift(e1, e2, ...)
 # enqueue
-<<(e) enq(e)
+<<(e) enq(e) push(e) unshift(e)
 # enqueue with custom priority
-enq(e, priority: p)
+enq(e, priority: p) push(e, priority: p) unshift(e, priority: e)
 # dequeue
 deq shift pop deque_with_priority
 # dequeue multiple
