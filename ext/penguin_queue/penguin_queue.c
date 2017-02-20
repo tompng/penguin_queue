@@ -4,19 +4,19 @@ static ID id_priority, id_cmp, id_call;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
   long index, id;
-  VALUE heap, priority, value;
+  VALUE queue, priority, value;
 };
 VALUE node_class;
 void node_mark(struct node *ptr){
-  rb_gc_mark(ptr->heap);
+  rb_gc_mark(ptr->queue);
   rb_gc_mark(ptr->priority);
   rb_gc_mark(ptr->value);
 }
-VALUE node_alloc_internal(long index, long id, VALUE heap, VALUE priority, VALUE value){
+VALUE node_alloc_internal(long index, long id, VALUE queue, VALUE priority, VALUE value){
   struct node *ptr = ALLOC(struct node);
   ptr->index = index;
   ptr->id = id;
-  ptr->heap = heap;
+  ptr->queue = queue;
   ptr->priority = priority;
   ptr->value = value;
   return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
@@ -65,12 +65,12 @@ long compare(VALUE a, VALUE b){
   return rb_fix2long(cmp);
 }
 long compare_id(long a, long b){return a>b?1:a<b?-1:0;}
-void heap_mark(struct queue_data *st){
-  rb_gc_mark(st->heap);
-  rb_gc_mark(st->compare_by);
+void queue_mark(struct queue_data *self){
+  rb_gc_mark(self->heap);
+  rb_gc_mark(self->compare_by);
 }
-void heap_free(struct queue_data *st){free(st);}
-VALUE heap_alloc(VALUE klass){
+void queue_free(struct queue_data *st){free(st);}
+VALUE queue_alloc(VALUE klass){
   struct queue_data *ptr=ALLOC(struct queue_data);
   ptr->counter = 0;
   ptr->heap = rb_ary_new_capa(1);
@@ -80,12 +80,12 @@ VALUE heap_alloc(VALUE klass){
   }else{
     ptr->compare_by = Qnil;
   }
-  return Data_Wrap_Struct(klass, heap_mark, heap_free, ptr);
+  return Data_Wrap_Struct(klass, queue_mark, queue_free, ptr);
 }
 
 #define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
 
-VALUE heap_clear(VALUE self){
+VALUE queue_clear(VALUE self){
   QUEUE_PREPARE(self, ptr);
   ptr->counter = 0;
   rb_ary_clear(ptr->heap);
@@ -93,7 +93,7 @@ VALUE heap_clear(VALUE self){
   return self;
 }
 
-void heap_up(VALUE self, VALUE node){
+void queue_up(VALUE self, VALUE node){
   QUEUE_PREPARE(self, ptr);
   RARRAY_PTR_USE(ptr->heap, heap, {
     NODE_PREPARE(node, nptr);
@@ -114,7 +114,7 @@ void heap_up(VALUE self, VALUE node){
   });
 }
 
-void heap_down(VALUE self, VALUE node){
+void queue_down(VALUE self, VALUE node){
   QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -147,7 +147,7 @@ void heap_down(VALUE self, VALUE node){
   });
 }
 
-VALUE heap_remove_node(VALUE self, VALUE node){
+VALUE queue_remove_node(VALUE self, VALUE node){
   if(!rb_obj_is_kind_of(node, node_class))return Qnil;
   QUEUE_PREPARE(self, ptr);
   NODE_PREPARE(node, nptr);
@@ -162,9 +162,9 @@ VALUE heap_remove_node(VALUE self, VALUE node){
     long cmp = compare(rptr->priority, nptr->priority);
     if(!cmp)cmp = compare_id(rptr->id, nptr->id);
     if(cmp > 0){
-      heap_down(nptr->heap, replace_node);
+      queue_down(nptr->queue, replace_node);
     }else{
-      heap_up(nptr->heap, replace_node);
+      queue_up(nptr->queue, replace_node);
     }
   });
   return Qnil;
@@ -172,13 +172,13 @@ VALUE heap_remove_node(VALUE self, VALUE node){
 
 VALUE node_remove(VALUE self){
   NODE_PREPARE(self, nptr);
-  heap_remove_node(nptr->heap, self);
+  queue_remove_node(nptr->queue, self);
   return Qnil;
 }
 
 VALUE node_update_priority(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
-  QUEUE_PREPARE(nptr->heap, ptr);
+  QUEUE_PREPARE(nptr->queue, ptr);
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
   long cmp = compare(priority, priority_was);
@@ -187,14 +187,14 @@ VALUE node_update_priority(VALUE node, VALUE priority){
     if(heap[nptr->index] != node)return Qnil;
   });
   if(cmp < 0){
-    heap_up(nptr->heap, node);
+    queue_up(nptr->queue, node);
   }else{
-    heap_down(nptr->heap, node);
+    queue_down(nptr->queue, node);
   }
   return Qnil;
 }
 
-VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
+VALUE queue_enq_vp(VALUE self, VALUE value, VALUE priority){
   QUEUE_PREPARE(self, ptr);
   if(ptr->compare_by != Qnil){
     priority = rb_funcall(ptr->compare_by, id_call, 1, value);
@@ -203,14 +203,14 @@ VALUE heap_enq_vp(VALUE self, VALUE value, VALUE priority){
   VALUE node = node_alloc_internal(length, ptr->counter, self, priority, value);
   ptr->counter++;
   rb_ary_push(ptr->heap, node);
-  heap_up(self, node);
+  queue_up(self, node);
   return node;
 }
 
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 
-VALUE heap_enq(int argc, VALUE *argv, VALUE self){
+VALUE queue_enq(int argc, VALUE *argv, VALUE self){
   VALUE value, opts, priority, pri  = Qundef;
   if (OPTHASH_GIVEN_P(opts)) {
     ID keyword_ids[] = {id_priority};
@@ -218,13 +218,13 @@ VALUE heap_enq(int argc, VALUE *argv, VALUE self){
   }
   rb_scan_args(argc, argv, "1", &value);
   priority = (pri == Qundef) ? value : pri;
-  return heap_enq_vp(self, value, priority);
+  return queue_enq_vp(self, value, priority);
 }
-VALUE heap_push(VALUE self, VALUE value){
-  return heap_enq_vp(self, value, value);
+VALUE queue_push(VALUE self, VALUE value){
+  return queue_enq_vp(self, value, value);
 }
 
-VALUE heap_first_node(VALUE self){
+VALUE queue_first_node(VALUE self){
   QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
@@ -232,20 +232,20 @@ VALUE heap_first_node(VALUE self){
     return heap[1];
   });
 }
-VALUE heap_first(VALUE self){
-  VALUE node = heap_first_node(self);
+VALUE queue_first(VALUE self){
+  VALUE node = queue_first_node(self);
   if(node == Qnil)return Qnil;
   NODE_PREPARE(node, nptr);
   return nptr->value;
 }
-VALUE heap_first_with_priority(VALUE self){
-  VALUE node = heap_first_node(self);
+VALUE queue_first_with_priority(VALUE self){
+  VALUE node = queue_first_node(self);
   if(node == Qnil)return Qnil;
   NODE_PREPARE(node, nptr);
   return rb_ary_new_from_args(2, nptr->value, nptr->priority);
 }
 
-VALUE heap_deq_node(VALUE self){
+VALUE queue_deq_node(VALUE self){
   QUEUE_PREPARE(self, ptr);
   long length = RARRAY_LEN(ptr->heap);
   if(length == 1)return Qnil;
@@ -255,14 +255,14 @@ VALUE heap_deq_node(VALUE self){
     NODE_PREPARE(node, nptr);
     if(length > 1){
       nptr->index = 1;
-      heap_down(self, node);
+      queue_down(self, node);
     }
     return first;
   });
 }
-VALUE heap_deq(int argc, VALUE *argv, VALUE self){
+VALUE queue_deq(int argc, VALUE *argv, VALUE self){
   if(argc == 0){
-    VALUE node = heap_deq_node(self);
+    VALUE node = queue_deq_node(self);
     if(node == Qnil)return Qnil;
     NODE_PREPARE(node, nptr);
     return nptr->value;
@@ -276,33 +276,33 @@ VALUE heap_deq(int argc, VALUE *argv, VALUE self){
     if(n>length)n=length;
     VALUE result = rb_ary_new_capa(n);
     for(int i=0;i<n;i++){
-      VALUE node = heap_deq_node(self);
+      VALUE node = queue_deq_node(self);
       NODE_PREPARE(node, nptr);
       rb_ary_push(result, nptr->value);
     }
     return result;
   }
 }
-VALUE heap_deq_with_priority(VALUE self){
-  VALUE node = heap_deq_node(self);
+VALUE queue_deq_with_priority(VALUE self){
+  VALUE node = queue_deq_node(self);
   if(node == Qnil)return Qnil;
   NODE_PREPARE(node, nptr);
   return rb_ary_new_from_args(2, nptr->value, nptr->priority);
 }
 
-VALUE heap_size(VALUE self){
+VALUE queue_size(VALUE self){
   QUEUE_PREPARE(self, ptr);
   return LONG2FIX(RARRAY_LEN(ptr->heap)-1);
 }
-VALUE heap_is_empty(VALUE self){
+VALUE queue_is_empty(VALUE self){
   QUEUE_PREPARE(self, ptr);
   return RARRAY_LEN(ptr->heap) == 1 ? Qtrue : Qfalse;
 }
-VALUE heap_inspect(VALUE self){
+VALUE queue_inspect(VALUE self){
   VALUE str = rb_str_buf_new(0);
   rb_str_buf_append(str, rb_class_name(CLASS_OF(self)));
   RB_STR_BUF_CAT(str, "{size: ");
-  rb_str_buf_append(str, rb_inspect(heap_size(self)));
+  rb_str_buf_append(str, rb_inspect(queue_size(self)));
   RB_STR_BUF_CAT(str, "}");
   return str;
 }
@@ -312,31 +312,31 @@ void Init_penguin_queue(void){
   id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
 
-  VALUE heap_class = rb_define_class("PenguinQueue", rb_cObject);
-  rb_define_alloc_func(heap_class, heap_alloc);
-  rb_define_method(heap_class, "size", heap_size, 0);
-  rb_define_method(heap_class, "empty?", heap_is_empty, 0);
-  rb_define_method(heap_class, "clear", heap_clear, 0);
-  rb_define_method(heap_class, "inspect", heap_inspect, 0);
-  rb_define_method(heap_class, "top", heap_first, 0);
-  rb_define_method(heap_class, "peek", heap_first, 0);
-  rb_define_method(heap_class, "first", heap_first, 0);
-  rb_define_method(heap_class, "first_node", heap_first_node, 0);
-  rb_define_method(heap_class, "first_with_priority", heap_first_with_priority, 0);
-  rb_define_method(heap_class, "to_s", heap_inspect, 0);
-  rb_define_method(heap_class, "push", heap_enq, -1);
-  rb_define_method(heap_class, "<<", heap_push, 1);
-  rb_define_method(heap_class, "enq", heap_enq, -1);
-  rb_define_method(heap_class, "unshift", heap_enq, -1);
-  rb_define_method(heap_class, "pop", heap_deq, -1);
-  rb_define_method(heap_class, "shift", heap_deq, -1);
-  rb_define_method(heap_class, "deq", heap_deq, -1);
-  rb_define_method(heap_class, "poll", heap_deq, -1);
-  rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
-  rb_define_method(heap_class, "delete", heap_remove_node, 1);
-  rb_define_method(heap_class, "remove", heap_remove_node, 1);
+  VALUE queue_class = rb_define_class("PenguinQueue", rb_cObject);
+  rb_define_alloc_func(queue_class, queue_alloc);
+  rb_define_method(queue_class, "size", queue_size, 0);
+  rb_define_method(queue_class, "empty?", queue_is_empty, 0);
+  rb_define_method(queue_class, "clear", queue_clear, 0);
+  rb_define_method(queue_class, "inspect", queue_inspect, 0);
+  rb_define_method(queue_class, "top", queue_first, 0);
+  rb_define_method(queue_class, "peek", queue_first, 0);
+  rb_define_method(queue_class, "first", queue_first, 0);
+  rb_define_method(queue_class, "first_node", queue_first_node, 0);
+  rb_define_method(queue_class, "first_with_priority", queue_first_with_priority, 0);
+  rb_define_method(queue_class, "to_s", queue_inspect, 0);
+  rb_define_method(queue_class, "push", queue_enq, -1);
+  rb_define_method(queue_class, "<<", queue_push, 1);
+  rb_define_method(queue_class, "enq", queue_enq, -1);
+  rb_define_method(queue_class, "unshift", queue_enq, -1);
+  rb_define_method(queue_class, "pop", queue_deq, -1);
+  rb_define_method(queue_class, "shift", queue_deq, -1);
+  rb_define_method(queue_class, "deq", queue_deq, -1);
+  rb_define_method(queue_class, "poll", queue_deq, -1);
+  rb_define_method(queue_class, "deq_with_priority", queue_deq_with_priority, 0);
+  rb_define_method(queue_class, "delete", queue_remove_node, 1);
+  rb_define_method(queue_class, "remove", queue_remove_node, 1);
 
-  node_class = rb_define_class_under(heap_class, "Node", rb_cObject);
+  node_class = rb_define_class_under(queue_class, "Node", rb_cObject);
   rb_undef_alloc_func(node_class);
   rb_define_method(node_class, "priority", node_pri, 0);
   rb_define_method(node_class, "priority=", node_update_priority, 1);
