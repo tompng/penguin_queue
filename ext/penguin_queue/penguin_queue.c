@@ -309,6 +309,8 @@ void Init_penguin_queue(void){
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
   rb_define_method(heap_class, "inspect", heap_inspect, 0);
+  rb_define_method(heap_class, "top", heap_first, 0);
+  rb_define_method(heap_class, "peek", heap_first, 0);
   rb_define_method(heap_class, "first", heap_first, 0);
   rb_define_method(heap_class, "first_node", heap_first_node, 0);
   rb_define_method(heap_class, "first_with_priority", heap_first_with_priority, 0);
@@ -320,6 +322,7 @@ void Init_penguin_queue(void){
   rb_define_method(heap_class, "pop", heap_deq, -1);
   rb_define_method(heap_class, "shift", heap_deq, -1);
   rb_define_method(heap_class, "deq", heap_deq, -1);
+  rb_define_method(heap_class, "poll", heap_deq, -1);
   rb_define_method(heap_class, "deq_with_priority", heap_deq_with_priority, 0);
   rb_define_method(heap_class, "delete", heap_remove_node, 1);
   rb_define_method(heap_class, "remove", heap_remove_node, 1);
