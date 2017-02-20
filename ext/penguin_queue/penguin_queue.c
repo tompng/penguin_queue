@@ -202,6 +202,7 @@ VALUE node_remove(VALUE self){
 VALUE node_update_priority(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
   QUEUE_PREPARE(nptr->queue, ptr);
+  if(ptr->compare_by != Qnil)rb_raise(rb_eRuntimeError, "priority update not supported on queue initialized with block");
   int sgn = ptr->compare_sgn;
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;

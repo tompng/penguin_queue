@@ -87,6 +87,13 @@ class PenguinQueueTest < Minitest::Test
     assert 10.times.map{maxq.deq} == 10.times.to_a.reverse
   end
 
+  def test_priority_update_with_proc_handling
+    q = PenguinQueue.new{|n|n.size}
+    %w(hello a abc).each{|e|q<<e}
+    err = ((q.first_node.priority=1) rescue :error)
+    assert err==:error
+  end
+
   def test_queue_methods
     enq_methods = %i(<< enq push unshift)
     deq_methods = %i(deq shift pop poll deq_with_priority)
