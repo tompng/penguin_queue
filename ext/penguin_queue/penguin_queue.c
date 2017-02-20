@@ -1,6 +1,6 @@
 #include <ruby.h>
 
-static ID id_priority, id_cmp, id_call;
+static ID id_priority, id_cmp, id_call, id_order, id_max, id_min;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
   long index, id;
@@ -48,6 +48,7 @@ VALUE node_inspect(VALUE self){
 
 struct queue_data{
   long counter;
+  int compare_sgn;
   VALUE heap, compare_by;
 };
 
@@ -64,14 +65,21 @@ long compare(VALUE a, VALUE b){
   if(NIL_P(cmp))rb_cmperr(a,b);
   return rb_fix2long(cmp);
 }
+
 long compare_id(long a, long b){return a>b?1:a<b?-1:0;}
+
+#define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
+#define OPTHASH_GIVEN_P(opts) (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+
 void queue_mark(struct queue_data *self){
   rb_gc_mark(self->heap);
   rb_gc_mark(self->compare_by);
 }
+
 VALUE queue_alloc(VALUE klass){
   struct queue_data *ptr=ALLOC(struct queue_data);
   ptr->counter = 0;
+  ptr->compare_sgn = 1;
   ptr->heap = rb_ary_new_capa(1);
   rb_ary_push(ptr->heap, Qnil);
   if(rb_block_given_p()){
@@ -82,7 +90,20 @@ VALUE queue_alloc(VALUE klass){
   return Data_Wrap_Struct(klass, queue_mark, RUBY_DEFAULT_FREE, ptr);
 }
 
-#define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
+VALUE queue_initialize(int argc, VALUE *argv, VALUE self){
+  QUEUE_PREPARE(self, ptr);
+  VALUE opts, order;
+  if(!OPTHASH_GIVEN_P(opts))return self;
+  ID keyword_ids[] = {id_order};
+	rb_get_kwargs(opts, keyword_ids, 0, 1, &order);
+  if(order == Qundef)return self;
+  if(order == ID2SYM(id_max)){
+    ptr->compare_sgn = -1;
+  }else if(order != ID2SYM(id_min)){
+    rb_raise(rb_eArgError, "order should be :min or :max");
+  }
+  return self;
+}
 
 VALUE queue_clear(VALUE self){
   QUEUE_PREPARE(self, ptr);
@@ -94,6 +115,7 @@ VALUE queue_clear(VALUE self){
 
 void queue_up(VALUE self, VALUE node){
   QUEUE_PREPARE(self, ptr);
+  int sgn = ptr->compare_sgn;
   RARRAY_PTR_USE(ptr->heap, heap, {
     NODE_PREPARE(node, nptr);
     long index = nptr->index;
@@ -101,8 +123,8 @@ void queue_up(VALUE self, VALUE node){
       long pindex = index/2;
       VALUE pnode = heap[pindex];
       NODE_PREPARE(pnode, pptr);
-      long cmp = compare(pptr->priority, nptr->priority);
-      if(!cmp)cmp=compare_id(pptr->id, nptr->id);
+      long cmp = compare(pptr->priority, nptr->priority)*sgn;
+      if(!cmp)cmp=compare_id(pptr->id, nptr->id)*sgn;
       if(cmp<0)break;
       pptr->index = index;
       heap[index] = pnode;
@@ -115,6 +137,7 @@ void queue_up(VALUE self, VALUE node){
 
 void queue_down(VALUE self, VALUE node){
   QUEUE_PREPARE(self, ptr);
+  int sgn = ptr->compare_sgn;
   long length = RARRAY_LEN(ptr->heap);
   RARRAY_PTR_USE(ptr->heap, heap, {
     NODE_PREPARE(node, nptr);
@@ -126,16 +149,16 @@ void queue_down(VALUE self, VALUE node){
       if(lindex+1 < length){
         VALUE rnode = heap[lindex+1];
         NODE_PREPARE(rnode, rptr);
-        long cmp = compare(lptr->priority, rptr->priority);
-        if(!cmp)cmp=compare_id(lptr->id, rptr->id);
+        long cmp = compare(lptr->priority, rptr->priority)*sgn;
+        if(!cmp)cmp=compare_id(lptr->id, rptr->id)*sgn;
         if(cmp >= 0){
           lindex += 1;
           lnode = rnode;
           lptr = rptr;
         }
       }
-      long cmp = compare(nptr->priority, lptr->priority);
-      if(!cmp)cmp=compare_id(nptr->id, lptr->id);
+      long cmp = compare(nptr->priority, lptr->priority)*sgn;
+      if(!cmp)cmp=compare_id(nptr->id, lptr->id)*sgn;
       if(cmp <= 0)break;
       lptr->index = index;
       heap[index] = lnode;
@@ -150,6 +173,7 @@ VALUE queue_remove_node(VALUE self, VALUE node){
   if(!rb_obj_is_kind_of(node, node_class))return Qnil;
   QUEUE_PREPARE(self, ptr);
   NODE_PREPARE(node, nptr);
+  int sgn = ptr->compare_sgn;
   long length = RARRAY_LEN(ptr->heap);
   if(nptr->index >= length || RARRAY_AREF(ptr->heap, nptr->index) != node)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -158,8 +182,8 @@ VALUE queue_remove_node(VALUE self, VALUE node){
     NODE_PREPARE(replace_node, rptr);
     heap[nptr->index] = replace_node;
     rptr->index = nptr->index;
-    long cmp = compare(rptr->priority, nptr->priority);
-    if(!cmp)cmp = compare_id(rptr->id, nptr->id);
+    long cmp = compare(rptr->priority, nptr->priority)*sgn;
+    if(!cmp)cmp = compare_id(rptr->id, nptr->id)*sgn;
     if(cmp > 0){
       queue_down(nptr->queue, replace_node);
     }else{
@@ -178,9 +202,10 @@ VALUE node_remove(VALUE self){
 VALUE node_update_priority(VALUE node, VALUE priority){
   NODE_PREPARE(node, nptr);
   QUEUE_PREPARE(nptr->queue, ptr);
+  int sgn = ptr->compare_sgn;
   VALUE priority_was = nptr->priority;
   nptr->priority = priority;
-  long cmp = compare(priority, priority_was);
+  long cmp = compare(priority, priority_was)*sgn;
   if(cmp == 0)return Qnil;
   RARRAY_PTR_USE(ptr->heap, heap, {
     if(heap[nptr->index] != node)return Qnil;
@@ -205,9 +230,6 @@ VALUE queue_enq_vp(VALUE self, VALUE value, VALUE priority){
   queue_up(self, node);
   return node;
 }
-
-#define OPTHASH_GIVEN_P(opts) \
-    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 
 VALUE queue_enq(int argc, VALUE *argv, VALUE self){
   VALUE value, opts, priority, pri  = Qundef;
@@ -310,9 +332,13 @@ void Init_penguin_queue(void){
   id_priority = rb_intern("priority");
   id_call = rb_intern("call");
   id_cmp = rb_intern("<=>");
+  id_max = rb_intern("max");
+  id_min = rb_intern("min");
+  id_order = rb_intern("order");
 
   VALUE queue_class = rb_define_class("PenguinQueue", rb_cObject);
   rb_define_alloc_func(queue_class, queue_alloc);
+  rb_define_method(queue_class, "initialize", queue_initialize, -1);
   rb_define_method(queue_class, "size", queue_size, 0);
   rb_define_method(queue_class, "empty?", queue_is_empty, 0);
   rb_define_method(queue_class, "clear", queue_clear, 0);
