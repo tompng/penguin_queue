@@ -88,7 +88,7 @@ VALUE queue_alloc(VALUE klass){
 
 VALUE queue_initialize(int argc, VALUE *argv, VALUE self){
   QUEUE_PREPARE(self, ptr);
-  VALUE opts, order;
+  VALUE order;
   if(argc == 0)return self;
   rb_scan_args(argc, argv, "1", &order);
   if(order == ID2SYM(id_max)){
