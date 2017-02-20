@@ -52,16 +52,6 @@ class PenguinQueueTest < Minitest::Test
     assert 10.times.map{q.deq} == (10...20).map(&:to_s).reverse
   end
 
-  def test_invalid_compare
-    q = PenguinQueue.new
-    q << 'a'
-    err = :compare_error
-    b = q << 'b' rescue err
-    c = q << :c rescue err
-    assert b != err
-    assert c == err
-  end
-
   def test_value_update
     q = PenguinQueue.new
     10.times{|i|q<<i}
