@@ -19,7 +19,7 @@ VALUE node_alloc_internal(long index, long id, VALUE queue, VALUE priority, VALU
   ptr->queue = queue;
   ptr->priority = priority;
   ptr->value = value;
-  return Data_Wrap_Struct(node_class, node_mark, -1, ptr);
+  return Data_Wrap_Struct(node_class, node_mark, RUBY_DEFAULT_FREE, ptr);
 }
 #define NODE_PREPARE(self, name) struct node *name;Data_Get_Struct(self, struct node, name);
 VALUE node_pri(VALUE self){
@@ -69,7 +69,6 @@ void queue_mark(struct queue_data *self){
   rb_gc_mark(self->heap);
   rb_gc_mark(self->compare_by);
 }
-void queue_free(struct queue_data *st){free(st);}
 VALUE queue_alloc(VALUE klass){
   struct queue_data *ptr=ALLOC(struct queue_data);
   ptr->counter = 0;
@@ -80,7 +79,7 @@ VALUE queue_alloc(VALUE klass){
   }else{
     ptr->compare_by = Qnil;
   }
-  return Data_Wrap_Struct(klass, queue_mark, queue_free, ptr);
+  return Data_Wrap_Struct(klass, queue_mark, RUBY_DEFAULT_FREE, ptr);
 }
 
 #define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
