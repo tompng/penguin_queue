@@ -107,13 +107,12 @@ class PenguinQueueTest < Minitest::Test
     fetch_methods = %i(first peek top first_with_priority first_node)
     remove_methods = %i(remove delete)
     utility_methods = %i(to_s inspect clear size empty?)
-    [enq_methods, deq_methods, fetch_methods, remove_methods, utility_methods].each do |methods|
-      assert methods.all?{|m|PenguinQueue.public_instance_methods.include? m}
-    end
+    methods = enq_methods + deq_methods + fetch_methods + remove_methods + utility_methods
+    assert methods.sort == PenguinQueue.public_instance_methods(false).sort
   end
 
   def test_node_methods
-    node_methods = %i(remove delete value value= priority priority=)
-    assert node_methods.all?{|m|PenguinQueue::Node.public_instance_methods.include? m}
+    methods = %i(remove delete value value= priority priority= inspect to_s)
+    assert methods.sort == PenguinQueue::Node.public_instance_methods(false).sort
   end
 end
