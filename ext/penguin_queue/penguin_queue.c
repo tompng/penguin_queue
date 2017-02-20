@@ -85,6 +85,14 @@ VALUE heap_alloc(VALUE klass){
 
 #define QUEUE_PREPARE(self, name) struct queue_data *name;Data_Get_Struct(self, struct queue_data, name);
 
+VALUE heap_clear(VALUE self){
+  QUEUE_PREPARE(self, ptr);
+  ptr->counter = 0;
+  rb_ary_clear(ptr->heap);
+  rb_ary_push(ptr->heap, Qnil);
+  return self;
+}
+
 void heap_up(VALUE self, VALUE node){
   QUEUE_PREPARE(self, ptr);
   RARRAY_PTR_USE(ptr->heap, heap, {
@@ -308,6 +316,7 @@ void Init_penguin_queue(void){
   rb_define_alloc_func(heap_class, heap_alloc);
   rb_define_method(heap_class, "size", heap_size, 0);
   rb_define_method(heap_class, "empty?", heap_is_empty, 0);
+  rb_define_method(heap_class, "clear", heap_clear, 0);
   rb_define_method(heap_class, "inspect", heap_inspect, 0);
   rb_define_method(heap_class, "top", heap_first, 0);
   rb_define_method(heap_class, "peek", heap_first, 0);

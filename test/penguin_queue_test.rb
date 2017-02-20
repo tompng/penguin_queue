@@ -66,4 +66,14 @@ class PenguinQueueTest < Minitest::Test
     q.first_node.value = 1
     assert q.first == 1
   end
+
+  def test_clear
+    q = PenguinQueue.new
+    10.times{|i|q<<i}
+    assert q.size == 10
+    assert q.clear.object_id == q.object_id
+    assert q.size == 0
+    10.times.to_a.shuffle.each{|i|q<<i}
+    assert 10.times.map{q.deq} == 10.times.to_a
+  end
 end
