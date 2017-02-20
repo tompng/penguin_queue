@@ -54,5 +54,5 @@ remove(node) delete(node)
 to_s inspect clear size empty?
 
 # PenguinQueue::Node
-remove delete value value= priority priority=
+remove delete value value= priority priority= to_s inspect
 ```
