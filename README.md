@@ -1,4 +1,9 @@
-# Priority Queue
+# Penguin Queue
+
+[![Build Status](https://travis-ci.org/tompng/penguin_queue.svg?branch=master)](https://travis-ci.org/tompng/penguin_queue)
+
+Ruby priority-queue library
+
 ```ruby
 10000.times { array << rand; array.delete(array.min) } #=> slow when array.size is large
 10000.times { pq << rand; pq.deq } #=> fast even if pq.size is large
