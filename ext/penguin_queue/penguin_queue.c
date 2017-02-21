@@ -306,7 +306,8 @@ VALUE queue_deq(int argc, VALUE *argv, VALUE self){
     long length = RARRAY_LEN(ptr->heap)-1;
     if(n>length)n=length;
     VALUE result = rb_ary_new_capa(n);
-    for(int i=0;i<n;i++){
+    int i;
+    for(i=0;i<n;i++){
       VALUE node = queue_deq_node(self);
       NODE_PREPARE(node, nptr);
       rb_ary_push(result, nptr->value);
