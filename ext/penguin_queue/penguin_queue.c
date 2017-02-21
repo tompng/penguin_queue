@@ -1,6 +1,6 @@
 #include <ruby.h>
 
-static ID id_priority, id_cmp, id_call, id_order, id_max, id_min;
+static ID id_priority, id_cmp, id_call, id_max, id_min;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
   long index, id;
