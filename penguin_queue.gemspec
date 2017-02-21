@@ -13,6 +13,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{C Ext Priority Queue (binary heap)}
   spec.homepage      = "https://github.com/tompng/penguin_queue"
   spec.license       = "MIT"
+  spec.required_ruby_version = '>= 2.2.0'
   spec.extensions    = %w[ext/penguin_queue/extconf.rb]
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
