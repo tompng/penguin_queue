@@ -54,6 +54,7 @@ VALUE node_inspect(VALUE self){
 }
 
 long compare(VALUE a, VALUE b){
+#ifdef RB_FIXNUM_P
   if(RB_FIXNUM_P(a)&&RB_FIXNUM_P(b))
     return (long)a > (long)b ? 1 : (long)a < (long)b ? -1 : 0;
   if(RB_FLOAT_TYPE_P(a)&&RB_FLOAT_TYPE_P(b)){
@@ -63,6 +64,9 @@ long compare(VALUE a, VALUE b){
   if(RB_TYPE_P(a, T_STRING)&&RB_TYPE_P(b, T_STRING))
     return rb_str_cmp(a, b);
   return rb_fix2long(rb_funcall(a, id_cmp, 1, b));
+#else
+  return FIX2LONG(rb_funcall(a, id_cmp, 1, b));
+#endif
 }
 
 long compare_id(long a, long b){return a>b?1:a<b?-1:0;}
