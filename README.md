@@ -63,3 +63,21 @@ to_s inspect clear size empty? min? max?
 # PenguinQueue::Node
 remove delete value value= priority priority= to_s inspect
 ```
+
+# Double Ended Priority Queue
+```ruby
+# initialize
+PenguinQueue::MinMax.new
+PenguinQueue::MinMax.new(&calc_priority_from_element_proc)
+# enqueue: same as PenguinQueue
+<< enq push unshift
+# dequeue
+deq_min deq_max deq_min_with_priority deq_max_with_priority
+# fetch
+min max min_with_priority max_with_priority min_node max_node
+
+minmax = PenguinQueue::MinMax.new { |s| s.size }
+%w(pen pineapple apple pen).each { |s| minmax << s }
+minmax.deq_min #=> 'pen'
+minmax.deq_max #=> 'pineapple'
+```
