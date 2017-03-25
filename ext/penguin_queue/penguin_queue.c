@@ -1,6 +1,6 @@
 #include <ruby.h>
 
-static ID id_priority, id_cmp, id_call, id_max, id_min;
+static ID id_priority, id_cmp, id_call, id_max, id_min, id_minmax;
 #define RB_STR_BUF_CAT(rstr, cstr) rb_str_buf_cat((rstr), (cstr), sizeof(cstr)-1);
 struct node {
   long index, id;
@@ -100,7 +100,11 @@ VALUE queue_initialize(int argc, VALUE *argv, VALUE self){
   if(order == ID2SYM(id_max)){
     ptr->compare_sgn = -1;
   }else if(order != ID2SYM(id_min)){
-    rb_raise(rb_eArgError, "order should be :min or :max");
+    if(order == ID2SYM(id_minmax)){
+      rb_raise(rb_eArgError, "use PenguinQueue::MinMax for double ended priority queue");
+    }else{
+      rb_raise(rb_eArgError, "order should be :min or :max");
+    }
   }
   return self;
 }
@@ -400,6 +404,7 @@ void Init_penguin_queue(void){
   id_cmp = rb_intern("<=>");
   id_max = rb_intern("max");
   id_min = rb_intern("min");
+  id_minmax = rb_intern("minmax");
 
   queue_class = rb_define_class("PenguinQueue", rb_cObject);
   rb_define_alloc_func(queue_class, queue_alloc);
