@@ -53,11 +53,13 @@ class PenguinQueue::MinMax
   end
 
   def min
-    @min_queue.first&.value
+    node = @min_queue.first
+    node.value if node
   end
 
   def max
-    @max_queue.first&.value
+    node = @max_queue.first
+    node.value if node
   end
 
   def min_with_priority
@@ -95,15 +97,19 @@ class PenguinQueue::MinMax
   def deq_min n=nil
     return [size, n].min.times.map { deq_min } if n
     node = @min_queue.deq
-    node&.remove
-    node&.value
+    if node
+      node.remove
+      node.value
+    end
   end
 
   def deq_max n=nil
     return [size, n].min.times.map { deq_max } if n
     node = @max_queue.deq
-    node&.remove
-    node&.value
+    if node
+      node.remove
+      node.value
+    end
   end
 
   def remove node
